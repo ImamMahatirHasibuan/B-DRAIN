@@ -179,7 +179,7 @@ function MapDashboard({ onBack }) {
   const [priorityAreas, setPriorityAreas] = useState([]);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [mapCenter, setMapCenter] = useState([-6.2642, 106.9869]);
