@@ -1,0 +1,95 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "nama": "RSUD Kota Bekasi",
+        "name": "RSUD Kota Bekasi",
+        "tipe": "Rumah Sakit Umum Daerah",
+        "type": "Rumah Sakit Umum Daerah",
+        "alamat": "Jl. Banjir Kanal Timur No. 1, Bekasi",
+        "kabupaten": "Kota Bekasi"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.9901, -6.2176]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "nama": "Rumah Sakit Mitra Bekasi",
+        "name": "Rumah Sakit Mitra Bekasi",
+        "tipe": "Rumah Sakit Swasta",
+        "type": "Rumah Sakit Swasta",
+        "alamat": "Jl. Perjuangan No. 8, Bekasi",
+        "kabupaten": "Kota Bekasi"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.9745, -6.2259]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "nama": "Rumah Sakit Kebayoran",
+        "name": "Rumah Sakit Kebayoran",
+        "tipe": "Rumah Sakit Swasta",
+        "type": "Rumah Sakit Swasta",
+        "alamat": "Jl. Raya Bekasi Km. 21, Bekasi",
+        "kabupaten": "Kota Bekasi"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [107.0045, -6.2102]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "nama": "RSUD Bekasi Timur",
+        "name": "RSUD Bekasi Timur",
+        "tipe": "Rumah Sakit Umum Daerah",
+        "type": "Rumah Sakit Umum Daerah",
+        "alamat": "Jl. Suprapto, Bekasi Timur",
+        "kabupaten": "Kota Bekasi"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [107.0234, -6.2341]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "nama": "Klinik Kesehatan Mutiara",
+        "name": "Klinik Kesehatan Mutiara",
+        "tipe": "Klinik Kesehatan",
+        "type": "Klinik Kesehatan",
+        "alamat": "Jl. Ahmad Yani No. 12, Bekasi",
+        "kabupaten": "Kota Bekasi"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.9876, -6.2345]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "nama": "Rumah Sakit Harapan Ibu",
+        "name": "Rumah Sakit Harapan Ibu",
+        "tipe": "Rumah Sakit Swasta",
+        "type": "Rumah Sakit Swasta",
+        "alamat": "Jl. Kesehatan No. 5, Bekasi",
+        "kabupaten": "Kota Bekasi"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.9654, -6.2198]
+      }
+    }
+  ]
+}
