@@ -184,6 +184,7 @@ function MapDashboard({ onBack }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [mapCenter, setMapCenter] = useState([-6.2642, 106.9869]);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   // ========================================
   // DATA LOADING
@@ -570,15 +571,17 @@ function MapDashboard({ onBack }) {
             </div>
             <button className="icon-btn" onClick={toggleDarkMode} title="Toggle Dark Mode">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
             <button className="icon-btn" onClick={toggleFullscreen} title="Fullscreen">{fullscreen ? <Minimize2 size={20}/> : <Maximize2 size={20}/>}</button>
+            <button className="icon-btn" onClick={() => setIsMinimized(!isMinimized)} title={isMinimized ? "Restore" : "Minimize"}>{isMinimized ? <Maximize2 size={20}/> : <Minimize2 size={20}/>}</button>
+            <button className="icon-btn close-btn" onClick={onBack} title="Close Map"><X size={20}/></button>
             <button className="menu-btn" onClick={() => setSidebarOpen(s => !s)}>{sidebarOpen ? <X size={24}/> : <Menu size={23}/>}</button>
           </div>
         </div>
       </header>
 
-      <div className="main-content">
+      <div className={`main-content ${isMinimized ? 'minimized' : ''}`}>
 
         {/* SIDEBAR */}
-        <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <aside className={`sidebar ${sidebarOpen && !isMinimized ? 'open' : 'closed'}`}>
           <div className="sidebar-tabs">
             {[['overview','Overview',<Activity size={18}/>],['layers','Layers',<Layers size={18}/>],['analytics','Analytics',<TrendingUp size={18}/>],['spatial','Spatial',<MapIcon size={18}/>],['data','Data',<Database size={18}/>]].map(([tab,label,icon]) => (
               <button key={tab} className={`tab-btn ${activeTab===tab?'active':''}`} onClick={()=>setActiveTab(tab)}>
