@@ -6,7 +6,8 @@ import json
 import os
 
 app = Flask(__name__)
-CORS(app)  # Izinkan request dari React (localhost:5173)
+# Izinkan semua origin (localhost dev + domain deploy)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # ============================================
 # Load Model

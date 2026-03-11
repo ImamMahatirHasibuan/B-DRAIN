@@ -580,7 +580,7 @@ function MapDashboard({ onBack }) {
   // ========================================
   // ML PREDICTION
   // ========================================
-  const ML_API = 'http://localhost:5000';
+  const ML_API = import.meta.env.VITE_ML_API_URL || 'http://localhost:5000';
 
   const fetchMlModelInfo = async () => {
     try {
