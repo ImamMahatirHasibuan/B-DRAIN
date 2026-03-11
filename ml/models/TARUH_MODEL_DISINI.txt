@@ -1,0 +1,9 @@
+# Folder ini untuk menyimpan hasil training dari Google Colab
+# 
+# Setelah menjalankan notebook flood_risk_training.ipynb di Colab,
+# download dan letakkan file-file berikut di folder ini:
+#
+#   flood_risk_model.pkl   → model Random Forest / Gradient Boosting
+#   scaler.pkl             → StandardScaler untuk normalisasi fitur
+#   label_encoder.pkl      → LabelEncoder untuk decode hasil prediksi
+#   model_metadata.json    → informasi model (accuracy, fitur, dll)

@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   MapContainer, TileLayer, GeoJSON, Marker, Popup, 
-  Circle, CircleMarker, Polyline, useMap, LayersControl 
+  Circle, CircleMarker, Polyline, useMap, LayersControl, useMapEvents
 } from 'react-leaflet';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -16,7 +16,9 @@ import {
 import { 
   Droplets, AlertTriangle, Layers, Search, Filter, Download, 
   Info, MapPin, TrendingUp, Activity, Menu, X, Sun, Moon,
-  Maximize2, Minimize2, RefreshCw, Database, BarChart3, Map as MapIcon, ArrowLeft
+  Maximize2, Minimize2, RefreshCw, Database, BarChart3, Map as MapIcon, ArrowLeft,
+  Brain, Zap, CheckCircle, XCircle, AlertCircle,
+  Navigation2, Clock, Shield, Home
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
@@ -46,6 +48,57 @@ L.Icon.Default.mergeOptions({
 const COLORS = ['#991b1b', '#c2410c', '#065f46', '#1e40af', '#6b21a8', '#9f1239'];
 
 // ========================================
+// TOPO LAYERS CONFIG (geojson_kota_bekasi/)
+// ========================================
+const TOPO_LAYERS = [
+  // ── Topografi
+  { key: 'KONTUR_LN_25K',              label: 'Garis Kontur',         group: 'Topografi',     type: 'LN', color: '#b45309', weight: 1, dashArray: '4 2' },
+  { key: 'SPOTHEIGHT_PT_25K',           label: 'Titik Ketinggian',     group: 'Topografi',     type: 'PT', color: '#92400e' },
+  // ── Perairan
+  { key: 'SUNGAI_LN_25K',              label: 'Sungai (Garis)',       group: 'Perairan',      type: 'LN', color: '#0ea5e9', weight: 1.5 },
+  { key: 'SUNGAI_AR_25K',              label: 'Sungai (Area)',        group: 'Perairan',      type: 'AR', color: '#0284c7', fill: '#bae6fd', fillOpacity: 0.5 },
+  { key: 'DANAU_AR_25K',               label: 'Danau',                group: 'Perairan',      type: 'AR', color: '#0369a1', fill: '#7dd3fc', fillOpacity: 0.5 },
+  { key: 'TAMBANGAN_LN_25K',           label: 'Tambangan',            group: 'Perairan',      type: 'LN', color: '#0369a1', weight: 1 },
+  // ── Pertanian
+  { key: 'AGRISAWAH_AR_25K',           label: 'Sawah',                group: 'Pertanian',     type: 'AR', color: '#16a34a', fill: '#bbf7d0', fillOpacity: 0.45 },
+  { key: 'AGRILADANG_AR_25K',          label: 'Ladang',               group: 'Pertanian',     type: 'AR', color: '#15803d', fill: '#dcfce7', fillOpacity: 0.45 },
+  { key: 'AGRIKEBUN_AR_25K',           label: 'Kebun',                group: 'Pertanian',     type: 'AR', color: '#166534', fill: '#a7f3d0', fillOpacity: 0.45 },
+  { key: 'AGRITANAMCAMPUR_AR_25K',     label: 'Tanaman Campuran',     group: 'Pertanian',     type: 'AR', color: '#065f46', fill: '#d1fae5', fillOpacity: 0.40 },
+  // ── Vegetasi
+  { key: 'NONAGRIALANG_AR_25K',        label: 'Alang-alang',          group: 'Vegetasi',      type: 'AR', color: '#a16207', fill: '#fef9c3', fillOpacity: 0.40 },
+  { key: 'NONAGRISEMAKBELUKAR_AR_25K', label: 'Semak Belukar',        group: 'Vegetasi',      type: 'AR', color: '#78350f', fill: '#fef3c7', fillOpacity: 0.40 },
+  // ── Permukiman
+  { key: 'PEMUKIMAN_AR_25K',           label: 'Permukiman',           group: 'Permukiman',    type: 'AR', color: '#be123c', fill: '#fecdd3', fillOpacity: 0.40 },
+  { key: 'BANGUNAN_AR_25K',            label: 'Bangunan (Area)',      group: 'Permukiman',    type: 'AR', color: '#9f1239', fill: '#fda4af', fillOpacity: 0.40 },
+  { key: 'BANGUNAN_PT_25K',            label: 'Bangunan (Titik)',     group: 'Permukiman',    type: 'PT', color: '#881337' },
+  // ── Transportasi
+  { key: 'JALAN_LN_25K',              label: 'Jalan',                group: 'Transportasi',  type: 'LN', color: '#d97706', weight: 1.5 },
+  { key: 'RELKA_LN_25K',              label: 'Rel Kereta Api',       group: 'Transportasi',  type: 'LN', color: '#1f2937', weight: 2, dashArray: '8 4' },
+  { key: 'JEMBATAN_LN_25K',           label: 'Jembatan (Garis)',     group: 'Transportasi',  type: 'LN', color: '#92400e', weight: 2 },
+  { key: 'JEMBATAN_PT_25K',           label: 'Jembatan (Titik)',     group: 'Transportasi',  type: 'PT', color: '#78350f' },
+  { key: 'STASIUNKA_PT_25K',          label: 'Stasiun Kereta',       group: 'Transportasi',  type: 'PT', color: '#1f2937' },
+  // ── Administrasi
+  { key: 'ADMINISTRASI_LN_25K',       label: 'Batas Administrasi',   group: 'Administrasi',  type: 'LN', color: '#7c3aed', weight: 1.5, dashArray: '4 3' },
+  { key: 'ADMINISTRASIDESA_AR_25K',   label: 'Batas Desa/Kelurahan', group: 'Administrasi',  type: 'AR', color: '#6d28d9', fill: 'transparent', fillOpacity: 0 },
+  { key: 'TOPONIMI_PT_25K',           label: 'Toponimi',             group: 'Administrasi',  type: 'PT', color: '#4c1d95' },
+  { key: 'TONGGAKKM_PT_25K',          label: 'Tonggak KM',           group: 'Administrasi',  type: 'PT', color: '#5b21b6' },
+  // ── Fasilitas Umum
+  { key: 'KESEHATAN_PT_25K',          label: 'Fasilitas Kesehatan',  group: 'Fasilitas',     type: 'PT', color: '#059669' },
+  { key: 'PENDIDIKAN_PT_25K',         label: 'Fasilitas Pendidikan', group: 'Fasilitas',     type: 'PT', color: '#0891b2' },
+  { key: 'PEMERINTAHAN_PT_25K',       label: 'Kantor Pemerintahan',  group: 'Fasilitas',     type: 'PT', color: '#1d4ed8' },
+  { key: 'SARANAIBADAH_PT_25K',       label: 'Sarana Ibadah',        group: 'Fasilitas',     type: 'PT', color: '#6d28d9' },
+  { key: 'KANTORPOS_PT_25K',          label: 'Kantor Pos',           group: 'Fasilitas',     type: 'PT', color: '#dc2626' },
+  { key: 'NIAGA_PT_25K',              label: 'Niaga / Komersial',    group: 'Fasilitas',     type: 'PT', color: '#d97706' },
+  { key: 'CAGARBUDAYA_PT_25K',        label: 'Cagar Budaya',         group: 'Fasilitas',     type: 'PT', color: '#7c2d12' },
+  // ── Utilitas
+  { key: 'KABELLISTRIK_LN_25K',       label: 'Kabel Listrik',        group: 'Utilitas',      type: 'LN', color: '#ca8a04', weight: 1, dashArray: '6 3' },
+  { key: 'GENLISTRIK_PT_25K',         label: 'Generator Listrik',    group: 'Utilitas',      type: 'PT', color: '#ca8a04' },
+  { key: 'DEPOMINYAK_PT_25K',         label: 'Depo Minyak',          group: 'Utilitas',      type: 'PT', color: '#9a3412' },
+];
+
+const TOPO_GROUPS = [...new Set(TOPO_LAYERS.map(l => l.group))];
+
+// ========================================
 // GEOMAN CONTROL COMPONENT
 // ========================================
 const GeomanControl = () => {
@@ -72,6 +125,84 @@ const GeomanControl = () => {
   }, [map]);
   
   return null;
+};
+
+// ========================================
+// MAP CLICK HANDLER (for AI location picker)
+// ========================================
+const MapClickHandler = ({ active, onPick }) => {
+  useMapEvents({
+    click: (e) => {
+      if (active) onPick(e.latlng);
+    },
+  });
+  return null;
+};
+
+// ========================================
+// ML HELPER FUNCTIONS (pure, no state)
+// ========================================
+const haversine = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const getNearestHospital = (lat, lon, hospitalGeoJson) => {
+  if (!hospitalGeoJson?.features?.length) return null;
+  let best = null, bestDist = Infinity;
+  for (const f of hospitalGeoJson.features) {
+    const [hLon, hLat] = f.geometry.coordinates;
+    const d = haversine(lat, lon, hLat, hLon);
+    if (d < bestDist) {
+      bestDist = d;
+      const p = f.properties;
+      best = {
+        name: p.nama || p.NAMA || p.name || 'Rumah Sakit',
+        address: p.alamat || p.ALAMAT || p.address || '',
+        dist: bestDist,
+      };
+    }
+  }
+  return best;
+};
+
+const getFloodDuration = (riskClass, elev) => {
+  if (riskClass === 'tinggi') {
+    if (elev <= 5)  return '3–7 hari (sangat lambat surut)';
+    if (elev <= 12) return '2–5 hari';
+    return '1–3 hari';
+  }
+  if (riskClass === 'sedang') {
+    if (elev <= 5)  return '12–36 jam';
+    return '6–24 jam';
+  }
+  return 'Biasanya < 6 jam, surut cepat';
+};
+
+const getEvacuationAdvice = (riskClass) => {
+  if (riskClass === 'tinggi') return {
+    urgency: '⚠️ SEGERA EVAKUASI',
+    text: 'Tinggalkan area sebelum banjir tiba. Bawa dokumen penting, obat-obatan, dan kebutuhan darurat. Menuju ke shelter atau lantai atas gedung terdekat.',
+    color: '#ef4444',
+    bg: '#fee2e2',
+  };
+  if (riskClass === 'sedang') return {
+    urgency: '⚡ WASPADA TINGGI',
+    text: 'Pantau informasi BPBD setempat. Siapkan tas darurat dan pastikan jalur evakuasi bersih. Pindahkan barang berharga ke tempat lebih tinggi.',
+    color: '#f59e0b',
+    bg: '#fef3c7',
+  };
+  return {
+    urgency: '✅ SIAGA NORMAL',
+    text: 'Risiko rendah, namun tetap waspada saat hujan deras. Pastikan saluran drainase di sekitar rumah tidak tersumbat.',
+    color: '#22c55e',
+    bg: '#f0fdf4',
+  };
 };
 
 // ========================================
@@ -185,10 +316,30 @@ function MapDashboard({ onBack }) {
   const [mapCenter, setMapCenter] = useState([-6.2642, 106.9869]);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [topoLayerData, setTopoLayerData] = useState({});
+  const [activeTopoLayers, setActiveTopoLayers] = useState({});
+  const [topoGroupOpen, setTopoGroupOpen] = useState({});
+
+  // ML / AI Integration state
+  const [mlForm, setMlForm] = useState({
+    is_bandang: 0,       // 0=genangan, 1=bandang
+    elev_mean: 12,       // elevasi rata-rata (m)
+    severity_score: 2,   // 1=rendah, 2=sedang, 3=tinggi
+  });
+  const [mlPickMode, setMlPickMode] = useState(false);    // true = user sedang klik titik di peta
+  const [mlPickedPoint, setMlPickedPoint] = useState(null); // {lat, lng}
+  const [mlResult, setMlResult] = useState(null);          // prediction result
+  const [mlStatus, setMlStatus] = useState('idle');        // 'idle'|'loading'|'done'|'error'|'no-api'
+  const [showMlLayer, setShowMlLayer] = useState(true);
+  const [mlModelInfo, setMlModelInfo] = useState(null);
+  const [mlDerived, setMlDerived] = useState(null);  // {hospital, duration, advice}
 
   // ========================================
   // DATA LOADING
   // ========================================
+  // Fetch ML model info on load (non-blocking)
+  useEffect(() => { fetchMlModelInfo(); }, []);
+
   useEffect(() => {
     fetch('/data/data_banjir.geojson')
       .then(r => r.json())
@@ -359,6 +510,39 @@ function MapDashboard({ onBack }) {
   // ========================================
   const toggleLayer = layer => setActiveLayers(p => ({ ...p, [layer]: !p[layer] }));
 
+  const toggleTopoLayer = (key) => {
+    setActiveTopoLayers(prev => {
+      const newActive = !prev[key];
+      if (newActive && !topoLayerData[key]) {
+        fetch(`/data/geojson_kota_bekasi/${key}.geojson`)
+          .then(r => r.json())
+          .then(data => setTopoLayerData(d => ({ ...d, [key]: data })))
+          .catch(() => {});
+      }
+      return { ...prev, [key]: newActive };
+    });
+  };
+
+  const toggleTopoGroup = (group) => {
+    const groupKeys = TOPO_LAYERS.filter(l => l.group === group).map(l => l.key);
+    const anyActive = groupKeys.some(k => activeTopoLayers[k]);
+    setActiveTopoLayers(prev => {
+      const updated = { ...prev };
+      groupKeys.forEach(k => { updated[k] = !anyActive; });
+      return updated;
+    });
+    if (!anyActive) {
+      groupKeys.forEach(k => {
+        if (!topoLayerData[k]) {
+          fetch(`/data/geojson_kota_bekasi/${k}.geojson`)
+            .then(r => r.json())
+            .then(data => setTopoLayerData(d => ({ ...d, [k]: data })))
+            .catch(() => {});
+        }
+      });
+    }
+  };
+
   const handleBufferZonesToggle = () => {
     if (!analysisResults || selectedAnalysis !== 'buffer') {
       if (!drainageData || floodPoints.length === 0) { alert('Data belum tersedia'); return; }
@@ -370,6 +554,91 @@ function MapDashboard({ onBack }) {
   };
 
   const toggleDarkMode = () => { setDarkMode(d => !d); document.body.classList.toggle('dark-mode'); };
+
+  const downloadGeoJson = (data, filename) => {
+    if (!data) return;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/geo+json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadTopoLayer = async (key) => {
+    if (topoLayerData[key]) {
+      downloadGeoJson(topoLayerData[key], `${key}.geojson`);
+    } else {
+      try {
+        const r = await fetch(`/data/geojson_kota_bekasi/${key}.geojson`);
+        const data = await r.json();
+        setTopoLayerData(d => ({ ...d, [key]: data }));
+        downloadGeoJson(data, `${key}.geojson`);
+      } catch {}
+    }
+  };
+
+  // ========================================
+  // ML PREDICTION
+  // ========================================
+  const ML_API = 'http://localhost:5000';
+
+  const fetchMlModelInfo = async () => {
+    try {
+      const res = await fetch(`${ML_API}/api/health`);
+      if (res.ok) setMlModelInfo(await res.json());
+    } catch { /* API not running */ }
+  };
+
+  const handleKelurahanSelect = (val) => {
+    // REMOVED — replaced by map click interaction
+  };
+
+  const predictSingleArea = async () => {
+    if (!mlPickedPoint) return;
+    setMlStatus('loading');
+    setMlResult(null);
+    setMlDerived(null);
+    try {
+      const lat = mlPickedPoint.lat;
+      const lon = mlPickedPoint.lng;
+      // Build full feature vector — user fills is_bandang, elev_mean, severity_score;
+      // everything else uses sensible Bekasi defaults
+      const payload = {
+        is_bandang: mlForm.is_bandang,
+        elev_mean: mlForm.elev_mean,
+        elev_min: Math.max(0, mlForm.elev_mean - 3),
+        sungai_density: 0.08,
+        dist_to_river: 0.005,
+        pct_pemukiman: 0.65,
+        pct_sawah: 0.05,
+        jumlah_titik_banjir: 10,
+        masa_tanggap_darurat_hari: 14,
+        severity_score: mlForm.severity_score,
+        shape_area: 0.0005,
+        shape_leng: 0.15,
+        compactness: 0.28,
+        centroid_lat: parseFloat(lat.toFixed(6)),
+        centroid_lon: parseFloat(lon.toFixed(6)),
+      };
+      const res = await fetch(`${ML_API}/api/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const resultData = await res.json();
+      setMlResult(resultData);
+      // Compute derived outputs
+      const hospital = getNearestHospital(lat, lon, hospitalData);
+      const duration = getFloodDuration(resultData.predicted_class, mlForm.elev_mean);
+      const advice   = getEvacuationAdvice(resultData.predicted_class);
+      setMlDerived({ hospital, duration, advice });
+      setMlStatus('done');
+      setShowMlLayer(true);
+    } catch (e) {
+      setMlStatus(e.message.includes('Failed to fetch') ? 'no-api' : 'error');
+    }
+  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); setFullscreen(true); }
@@ -516,6 +785,25 @@ function MapDashboard({ onBack }) {
     });
   };
 
+  // ── Topo layer styles (used in map render)
+  const getTopoStyle = (cfg) => {
+    if (cfg.type === 'AR') return {
+      fillColor: cfg.fill || cfg.color,
+      fillOpacity: cfg.fillOpacity !== undefined ? cfg.fillOpacity : 0.4,
+      color: cfg.color,
+      weight: cfg.weight || 1,
+      opacity: 0.85,
+      dashArray: cfg.dashArray,
+    };
+    if (cfg.type === 'LN') return {
+      color: cfg.color,
+      weight: cfg.weight || 1.5,
+      opacity: 0.85,
+      dashArray: cfg.dashArray,
+    };
+    return {};
+  };
+
   const getProximityLineColor = score => score === 'Baik' ? '#10b981' : score === 'Sedang' ? '#f59e0b' : '#ef4444';
 
   const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
@@ -581,7 +869,7 @@ function MapDashboard({ onBack }) {
         {/* SIDEBAR */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
           <div className="sidebar-tabs">
-            {[['overview','Overview',<Activity size={18}/>],['layers','Layers',<Layers size={18}/>],['analytics','Analytics',<TrendingUp size={18}/>],['spatial','Spatial',<MapIcon size={18}/>],['data','Data',<Database size={18}/>]].map(([tab,label,icon]) => (
+            {[['overview','Overview',<Activity size={18}/>],['layers','Layers',<Layers size={18}/>],['analytics','Analytics',<TrendingUp size={18}/>],['spatial','Spatial',<MapIcon size={18}/>],['ai','Risiko',<Brain size={18}/>]].map(([tab,label,icon]) => (
               <button key={tab} className={`tab-btn ${activeTab===tab?'active':''}`} onClick={()=>setActiveTab(tab)}>
                 {icon}<span>{label}</span>
               </button>
@@ -636,6 +924,22 @@ function MapDashboard({ onBack }) {
                       <span className="stat-value">{stats.avgPerKecamatan}</span>
                       <span className="stat-label">Rata-rata/Kecamatan</span>
                       <span className="stat-change">Titik per area</span>
+                    </div>
+                  </div>
+                  <div className="stat-card gradient-blue">
+                    <div className="stat-icon"><Layers size={28}/></div>
+                    <div className="stat-content">
+                      <span className="stat-value">{(floodRiskData?.features?.length||0)+(flashFloodRiskData?.features?.length||0)}</span>
+                      <span className="stat-label">Area Delineasi Risiko</span>
+                      <span className="stat-change">{floodRiskData?.features?.length||0} genangan · {flashFloodRiskData?.features?.length||0} bandang</span>
+                    </div>
+                  </div>
+                  <div className="stat-card gradient-purple">
+                    <div className="stat-icon"><Database size={28}/></div>
+                    <div className="stat-content">
+                      <span className="stat-value">{TOPO_LAYERS.length}</span>
+                      <span className="stat-label">Layer Topografi BIG</span>
+                      <span className="stat-change">Peta 1:25.000 · {TOPO_GROUPS.length} kategori</span>
                     </div>
                   </div>
                 </div>
@@ -697,6 +1001,61 @@ function MapDashboard({ onBack }) {
                       </label>
                     </div>
                   ))}
+                </div>
+
+                {/* ── Topografi BIG 1:25.000 */}
+                <div style={{marginTop:'1.2rem'}}>
+                  <div style={{fontWeight:'700',color:'#0c4a6e',fontSize:'.85rem',marginBottom:'.6rem',display:'flex',alignItems:'center',gap:'.4rem'}}>
+                    <Database size={15}/> Data Topografi BIG 1:25.000
+                    <span style={{fontSize:'.75rem',color:'#64748b',fontWeight:'400'}}>({TOPO_LAYERS.length} layer)</span>
+                  </div>
+                  {TOPO_GROUPS.map(group => {
+                    const groupLayers = TOPO_LAYERS.filter(l => l.group === group);
+                    const anyActive = groupLayers.some(l => activeTopoLayers[l.key]);
+                    const isOpen = topoGroupOpen[group];
+                    return (
+                      <div key={group} style={{marginBottom:'.5rem',border:'1px solid rgba(14,165,233,0.15)',borderRadius:'10px',overflow:'hidden'}}>
+                        <div
+                          onClick={() => setTopoGroupOpen(p => ({...p, [group]: !p[group]}))}
+                          style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.5rem .75rem',background: anyActive ? 'rgba(14,165,233,0.08)' : 'rgba(248,250,252,0.7)',cursor:'pointer',gap:'.5rem'}}
+                        >
+                          <div style={{display:'flex',alignItems:'center',gap:'.5rem'}}>
+                            <input
+                              type="checkbox"
+                              checked={anyActive}
+                              onChange={() => toggleTopoGroup(group)}
+                              onClick={e => e.stopPropagation()}
+                              style={{width:'14px',height:'14px',cursor:'pointer'}}
+                            />
+                            <span style={{fontWeight:'600',fontSize:'.8rem',color:'#1e3a5f'}}>{group}</span>
+                            <span style={{fontSize:'.72rem',color:'#94a3b8'}}>({groupLayers.length})</span>
+                          </div>
+                          <span style={{fontSize:'.75rem',color:'#94a3b8'}}>{isOpen ? '▲' : '▼'}</span>
+                        </div>
+                        {isOpen && (
+                          <div style={{padding:'.35rem .6rem .4rem',background:'rgba(255,255,255,0.6)'}}>
+                            {groupLayers.map(cfg => (
+                              <div key={cfg.key} style={{display:'flex',alignItems:'center',gap:'.45rem',padding:'.25rem .4rem',borderRadius:'6px',marginBottom:'.15rem'}}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!activeTopoLayers[cfg.key]}
+                                  onChange={() => toggleTopoLayer(cfg.key)}
+                                  style={{width:'13px',height:'13px',cursor:'pointer'}}
+                                />
+                                <span style={{width:'10px',height:'10px',borderRadius: cfg.type==='PT'?'50%':'2px',background:cfg.color,flexShrink:0,opacity:.9}}></span>
+                                <span style={{fontSize:'.78rem',color:'#374151'}}>{cfg.label}</span>
+                                {topoLayerData[cfg.key] && (
+                                  <span style={{fontSize:'.7rem',color:'#94a3b8',marginLeft:'auto'}}>
+                                    {topoLayerData[cfg.key].features?.length || 0}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="filter-section">
@@ -901,35 +1260,266 @@ function MapDashboard({ onBack }) {
               </div>
             )}
 
-            {/* DATA */}
-            {activeTab === 'data' && (
-              <div className="data-section">
-                <h3>Data Tabel</h3>
-                <div className="data-table-wrapper glass-effect">
-                  <table className="data-table">
-                    <thead><tr><th>Kecamatan</th><th>Titik</th><th>Status</th></tr></thead>
-                    <tbody>
-                      {filteredFloodPoints.map(p=>(
-                        <tr key={p.id}>
-                          <td>{p.nama_kecamatan||p.kecamatan}</td>
-                          <td><strong>{p.jumlah_titik}</strong></td>
-                          <td><span className={`status-badge ${p.severity}`}>{p.severity==='high'?'Tinggi':p.severity==='medium'?'Sedang':'Rendah'}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            {/* AI / ML */}
+            {activeTab === 'ai' && (() => {
+              const riskColor  = (cls) => cls === 'tinggi' ? '#dc2626' : cls === 'sedang' ? '#d97706' : '#16a34a';
+              const riskBg     = (cls) => cls === 'tinggi' ? '#fef2f2' : cls === 'sedang' ? '#fffbeb' : '#f0fdf4';
+              const riskBorder = (cls) => cls === 'tinggi' ? '#fecaca' : cls === 'sedang' ? '#fde68a' : '#bbf7d0';
+              const riskLabel  = (cls) => cls === 'tinggi' ? 'Tinggi' : cls === 'sedang' ? 'Sedang' : 'Rendah';
+              const inp = {
+                width:'100%', padding:'.45rem .6rem', borderRadius:'8px',
+                border:'1px solid #e2e8f0', fontSize:'.82rem', color:'#1e3a5f',
+                background:'white', boxSizing:'border-box', outline:'none',
+                transition:'border-color .15s',
+              };
+              const lbl = { fontSize:'.72rem', fontWeight:'600', color:'#64748b', display:'block', marginBottom:'.3rem', letterSpacing:'.02em', textTransform:'uppercase' };
+              return (
+                <div style={{display:'flex', flexDirection:'column', gap:0}}>
+
+                  {/* ── Panel header */}
+                  <div style={{padding:'1rem 1rem .75rem', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                    <div>
+                      <div style={{fontWeight:'700', fontSize:'.95rem', color:'#0f172a'}}>Analisis Risiko Banjir</div>
+                      <div style={{fontSize:'.72rem', color:'#94a3b8', marginTop:'.15rem'}}>Masukkan data lokasi untuk mendapat penilaian risiko</div>
+                    </div>
+                    <span style={{
+                      display:'inline-flex', alignItems:'center', gap:'.3rem',
+                      padding:'3px 9px', borderRadius:'99px', fontSize:'.67rem', fontWeight:'700',
+                      letterSpacing:'.03em',
+                      background: mlModelInfo ? '#f0fdf4' : '#f8fafc',
+                      color: mlModelInfo ? '#15803d' : '#94a3b8',
+                      border: `1px solid ${mlModelInfo ? '#bbf7d0' : '#e2e8f0'}`,
+                    }}>
+                      <span style={{width:'6px',height:'6px',borderRadius:'50%',background: mlModelInfo ? '#22c55e' : '#cbd5e1', flexShrink:0}}/>
+                      {mlModelInfo ? 'Tersambung' : 'Offline'}
+                    </span>
+                  </div>
+
+                  <div style={{padding:'1rem', display:'flex', flexDirection:'column', gap:'1rem'}}>
+
+                    {/* ── Step 1 */}
+                    <div>
+                      <div style={{display:'flex', alignItems:'center', gap:'.5rem', marginBottom:'.55rem'}}>
+                        <span style={{width:'20px',height:'20px',borderRadius:'50%',background:'#0ea5e9',color:'white',fontSize:'.68rem',fontWeight:'800',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>1</span>
+                        <span style={{fontSize:'.8rem',fontWeight:'700',color:'#1e3a5f'}}>Pilih Lokasi di Peta</span>
+                      </div>
+                      <button
+                        onClick={() => { setMlPickMode(p => !p); setMlResult(null); setMlDerived(null); setMlStatus('idle'); }}
+                        style={{
+                          width:'100%', padding:'.55rem .75rem', borderRadius:'9px', fontSize:'.8rem',
+                          fontWeight:'600', cursor:'pointer', transition:'all .18s',
+                          display:'flex', alignItems:'center', justifyContent:'center', gap:'.45rem',
+                          border: mlPickMode ? '1.5px solid #0ea5e9' : '1.5px dashed #cbd5e1',
+                          background: mlPickMode ? '#f0f9ff' : '#fafafa',
+                          color: mlPickMode ? '#0369a1' : '#64748b',
+                          boxShadow: mlPickMode ? '0 0 0 3px rgba(14,165,233,.1)' : 'none',
+                        }}
+                      >
+                        <MapPin size={14} style={{flexShrink:0}}/>
+                        {mlPickMode ? 'Klik titik di peta…' : 'Tentukan lokasi pada peta'}
+                      </button>
+                      {mlPickedPoint ? (
+                        <div style={{marginTop:'.45rem', display:'flex', alignItems:'center', gap:'.5rem', padding:'.4rem .6rem', background:'#f0f9ff', borderRadius:'7px', border:'1px solid #bae6fd'}}>
+                          <MapPin size={11} style={{color:'#0284c7',flexShrink:0}}/>
+                          <span style={{fontSize:'.74rem', color:'#0369a1', fontWeight:'600', flex:1}}>
+                            {mlPickedPoint.lat.toFixed(5)}, {mlPickedPoint.lng.toFixed(5)}
+                          </span>
+                          <button
+                            onClick={()=>{setMlPickedPoint(null);setMlResult(null);setMlDerived(null);setMlStatus('idle');}}
+                            style={{background:'none',border:'none',padding:'1px 3px',cursor:'pointer',color:'#94a3b8',fontSize:'.8rem',lineHeight:1,borderRadius:'4px'}}
+                          >✕</button>
+                        </div>
+                      ) : (
+                        <div style={{marginTop:'.4rem', textAlign:'center', fontSize:'.72rem', color:'#cbd5e1'}}>— belum dipilih —</div>
+                      )}
+                    </div>
+
+                    {/* ── Step 2 */}
+                    <div>
+                      <div style={{display:'flex', alignItems:'center', gap:'.5rem', marginBottom:'.55rem'}}>
+                        <span style={{width:'20px',height:'20px',borderRadius:'50%',background:'#0ea5e9',color:'white',fontSize:'.68rem',fontWeight:'800',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>2</span>
+                        <span style={{fontSize:'.8rem',fontWeight:'700',color:'#1e3a5f'}}>Data Lokasi</span>
+                      </div>
+
+                      {/* Elevation */}
+                      <div style={{marginBottom:'.6rem'}}>
+                        <label style={lbl}>Ketinggian Lokasi <span style={{color:'#cbd5e1',fontWeight:'400',textTransform:'none'}}>(m dpl)</span></label>
+                        <div style={{position:'relative'}}>
+                          <input
+                            type="number" min={0} max={500} step={0.5}
+                            value={mlForm.elev_mean}
+                            onChange={e => setMlForm(f => ({...f, elev_mean: parseFloat(e.target.value)||0}))}
+                            style={inp}
+                            placeholder="0"
+                          />
+                          <span style={{position:'absolute',right:'.6rem',top:'50%',transform:'translateY(-50%)',fontSize:'.72rem',color:'#94a3b8',pointerEvents:'none'}}>meter</span>
+                        </div>
+                      </div>
+
+                      {/* Flood type */}
+                      <div style={{marginBottom:'.6rem'}}>
+                        <label style={lbl}>Jenis Potensi Banjir</label>
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.4rem'}}>
+                          {[['Genangan',0,'#3b82f6'],['Bandang',1,'#ef4444']].map(([l,v,c]) => (
+                            <label key={v} style={{
+                              display:'flex', alignItems:'center', gap:'.4rem', padding:'.45rem .6rem',
+                              borderRadius:'8px', cursor:'pointer', transition:'all .15s', fontSize:'.79rem',
+                              border: `1.5px solid ${mlForm.is_bandang===v ? c : '#e2e8f0'}`,
+                              background: mlForm.is_bandang===v ? `${c}0f` : 'white',
+                              color: mlForm.is_bandang===v ? c : '#475569',
+                              fontWeight: mlForm.is_bandang===v ? '700' : '500',
+                            }}>
+                              <input type="radio" name="is_bandang" value={v} checked={mlForm.is_bandang===v}
+                                onChange={()=>setMlForm(f=>({...f,is_bandang:v}))} style={{display:'none'}}/>
+                              <span style={{width:'7px',height:'7px',borderRadius:'50%',background: mlForm.is_bandang===v ? c : '#e2e8f0',flexShrink:0,transition:'all .15s'}}/>
+                              {l}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Flood history */}
+                      <div>
+                        <label style={lbl}>Frekuensi Banjir di Sekitar</label>
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'.4rem'}}>
+                          {[['Jarang',1,'#16a34a'],['Kadang',2,'#d97706'],['Sering',3,'#dc2626']].map(([l,v,c]) => (
+                            <label key={v} style={{
+                              display:'flex', alignItems:'center', justifyContent:'center',
+                              padding:'.4rem', borderRadius:'8px', cursor:'pointer', transition:'all .15s',
+                              fontSize:'.76rem', textAlign:'center',
+                              border: `1.5px solid ${mlForm.severity_score===v ? c : '#e2e8f0'}`,
+                              background: mlForm.severity_score===v ? `${c}0f` : 'white',
+                              color: mlForm.severity_score===v ? c : '#64748b',
+                              fontWeight: mlForm.severity_score===v ? '700' : '500',
+                            }}>
+                              <input type="radio" name="severity" value={v} checked={mlForm.severity_score===v}
+                                onChange={()=>setMlForm(f=>({...f,severity_score:v}))} style={{display:'none'}}/>
+                              {l}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Analyze button */}
+                    <button
+                      onClick={() => { if (mlStatus !== 'loading') predictSingleArea(); }}
+                      disabled={mlStatus === 'loading' || !mlPickedPoint}
+                      style={{
+                        width:'100%', padding:'.62rem', borderRadius:'10px', border:'none', fontSize:'.85rem',
+                        fontWeight:'700', cursor: (!mlPickedPoint||mlStatus==='loading') ? 'not-allowed' : 'pointer',
+                        display:'flex', alignItems:'center', justifyContent:'center', gap:'.5rem',
+                        transition:'all .2s', letterSpacing:'.01em',
+                        background: (!mlPickedPoint||mlStatus==='loading')
+                          ? '#e2e8f0'
+                          : 'linear-gradient(135deg,#0284c7 0%,#0369a1 100%)',
+                        color: (!mlPickedPoint||mlStatus==='loading') ? '#94a3b8' : 'white',
+                        boxShadow: (!mlPickedPoint||mlStatus==='loading') ? 'none' : '0 4px 14px rgba(2,132,199,.3)',
+                      }}
+                    >
+                      {mlStatus === 'loading'
+                        ? <><RefreshCw size={14} style={{animation:'spin 1s linear infinite'}}/> Menganalisis…</>
+                        : <><Droplets size={14}/> Analisis Risiko</>}
+                    </button>
+
+                    {/* ── Error states */}
+                    {mlStatus === 'no-api' && (
+                      <div style={{padding:'.6rem .75rem', background:'#fffbeb', border:'1px solid #fde68a', borderRadius:'8px', fontSize:'.76rem', color:'#92400e', display:'flex', gap:'.5rem', alignItems:'flex-start'}}>
+                        <AlertCircle size={13} style={{flexShrink:0, marginTop:'1px'}}/>
+                        <span>Server analisis tidak aktif. Jalankan <code style={{background:'rgba(0,0,0,.06)',padding:'1px 5px',borderRadius:'4px',fontFamily:'monospace'}}>python ml/api.py</code> lalu coba lagi.</span>
+                      </div>
+                    )}
+                    {mlStatus === 'error' && (
+                      <div style={{padding:'.6rem .75rem', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'8px', fontSize:'.76rem', color:'#991b1b', display:'flex', gap:'.5rem', alignItems:'center'}}>
+                        <XCircle size={13} style={{flexShrink:0}}/> Analisis gagal. Periksa konsol untuk detail.
+                      </div>
+                    )}
+
+                    {/* ── Result */}
+                    {mlStatus === 'done' && mlResult && mlDerived && (() => {
+                      const cls = mlResult.predicted_class;
+                      return (
+                        <div style={{display:'flex', flexDirection:'column', gap:'.65rem', animation:'slideUp .25s ease'}}>
+
+                          {/* Risk score card */}
+                          <div style={{borderRadius:'12px', overflow:'hidden', border:`1px solid ${riskBorder(cls)}`}}>
+                            <div style={{padding:'.65rem 1rem', background: riskBg(cls), display:'flex', alignItems:'center', gap:'.75rem'}}>
+                              <div style={{flex:1}}>
+                                <div style={{fontSize:'.68rem', fontWeight:'700', color:'#64748b', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'.15rem'}}>Tingkat Risiko</div>
+                                <div style={{fontSize:'1.5rem', fontWeight:'900', color: riskColor(cls), lineHeight:1}}>{riskLabel(cls)}</div>
+                              </div>
+                              <div style={{textAlign:'center', padding:'.4rem .7rem', background:'white', borderRadius:'9px', border:`1px solid ${riskBorder(cls)}`}}>
+                                <div style={{fontSize:'1.35rem', fontWeight:'900', color: riskColor(cls), lineHeight:1}}>{mlResult.risk_score}</div>
+                                <div style={{fontSize:'.62rem', color:'#94a3b8', fontWeight:'600'}}>/ 100</div>
+                              </div>
+                            </div>
+                            {/* Probability bars */}
+                            <div style={{padding:'.65rem 1rem', background:'white', borderTop:`1px solid ${riskBorder(cls)}`}}>
+                              <div style={{fontSize:'.68rem', fontWeight:'700', color:'#94a3b8', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'.45rem'}}>Probabilitas</div>
+                              {Object.entries(mlResult.probabilities || {}).map(([c, p]) => (
+                                <div key={c} style={{display:'flex', alignItems:'center', gap:'.5rem', marginBottom:'.3rem'}}>
+                                  <span style={{width:'44px', fontSize:'.7rem', color:'#64748b', textTransform:'capitalize', flexShrink:0}}>{c}</span>
+                                  <div style={{flex:1, height:'5px', background:'#f1f5f9', borderRadius:'99px', overflow:'hidden'}}>
+                                    <div style={{height:'100%', width:`${(p*100).toFixed(0)}%`, background: riskColor(c), borderRadius:'99px', transition:'width .6s ease'}}/>
+                                  </div>
+                                  <span style={{width:'36px', fontSize:'.7rem', fontWeight:'700', color: riskColor(c), textAlign:'right', flexShrink:0}}>{(p*100).toFixed(1)}%</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Info cards: hospital + duration */}
+                          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.5rem'}}>
+                            {mlDerived.hospital && (
+                              <div style={{padding:'.6rem .65rem', background:'white', borderRadius:'10px', border:'1px solid #e2e8f0', boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>
+                                <div style={{fontSize:'.65rem', fontWeight:'700', color:'#94a3b8', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'.3rem'}}>RS Terdekat</div>
+                                <div style={{fontSize:'.76rem', fontWeight:'700', color:'#0f172a', marginBottom:'.15rem', lineHeight:'1.3'}}>{mlDerived.hospital.name}</div>
+                                <div style={{fontSize:'.75rem', fontWeight:'800', color:'#0284c7'}}>{mlDerived.hospital.dist.toFixed(2)} km</div>
+                              </div>
+                            )}
+                            <div style={{padding:'.6rem .65rem', background:'white', borderRadius:'10px', border:'1px solid #e2e8f0', boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>
+                              <div style={{fontSize:'.65rem', fontWeight:'700', color:'#94a3b8', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'.3rem'}}>Estimasi Surut</div>
+                              <div style={{fontSize:'.75rem', fontWeight:'700', color:'#0f172a', lineHeight:'1.35'}}>{mlDerived.duration}</div>
+                            </div>
+                          </div>
+
+                          {/* Evacuation recommendation */}
+                          <div style={{padding:'.65rem .75rem', borderRadius:'10px', background: riskBg(cls), border:`1px solid ${riskBorder(cls)}`}}>
+                            <div style={{fontSize:'.7rem', fontWeight:'800', color: riskColor(cls), marginBottom:'.3rem', letterSpacing:'.02em'}}>{mlDerived.advice.urgency}</div>
+                            <div style={{fontSize:'.74rem', color:'#374151', lineHeight:'1.5'}}>{mlDerived.advice.text}</div>
+                          </div>
+
+                          <div style={{fontSize:'.64rem', color:'#cbd5e1', textAlign:'center'}}>
+                            {mlPickedPoint?.lat.toFixed(5)}, {mlPickedPoint?.lng.toFixed(5)}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
+
+
 
           </div>
         </aside>
 
         {/* MAP SECTION */}
         <main className={`map-section ${isMinimized ? 'minimized' : ''}`}>
-          <MapContainer center={mapCenter} zoom={12} style={{height:'100%',width:'100%'}} className="leaflet-container">
+          <MapContainer center={mapCenter} zoom={12} style={{height:'100%',width:'100%', cursor: mlPickMode ? 'crosshair' : ''}} className="leaflet-container">
 
             <GeomanControl />
+            <MapClickHandler
+              active={mlPickMode}
+              onPick={(latlng) => {
+                setMlPickedPoint(latlng);
+                setMlPickMode(false);
+                setMlResult(null);
+                setMlDerived(null);
+                setMlStatus('idle');
+              }}
+            />
 
             {/* Base tile — clean, light cartographic style */}
             <TileLayer
@@ -1055,6 +1645,88 @@ function MapDashboard({ onBack }) {
               </Polyline>
             ))}
 
+            {/* ── Topografi BIG layers */}
+            {TOPO_LAYERS.map(cfg => {
+              if (!activeTopoLayers[cfg.key] || !topoLayerData[cfg.key]) return null;
+              if (cfg.type === 'PT') {
+                return (
+                  <GeoJSON
+                    key={`topo-${cfg.key}`}
+                    data={topoLayerData[cfg.key]}
+                    pointToLayer={(feature, latlng) =>
+                      L.circleMarker(latlng, {
+                        radius: 4,
+                        fillColor: cfg.color,
+                        color: '#fff',
+                        weight: 0.8,
+                        opacity: 0.9,
+                        fillOpacity: 0.8,
+                      })
+                    }
+                    onEachFeature={(feature, layer) => {
+                      const p = feature.properties || {};
+                      const label = p.NAMOBJ || p.NAMA || p.nama || p.REMARK || cfg.label;
+                      const extra = Object.entries(p)
+                        .filter(([k,v]) => v && !['FID','OBJECTID','REMARK','LUASWH','KELILINGWH'].includes(k))
+                        .slice(0, 5)
+                        .map(([k,v]) => `<p><strong>${k}:</strong> ${v}</p>`) .join('');
+                      layer.bindPopup(`<div class="custom-popup"><h4 style="color:${cfg.color}">${cfg.label}</h4><p>${label}</p>${extra}<p style="font-size:.8em;color:#64748b;margin-top:6px">Sumber: BIG 1:25.000</p></div>`);
+                    }}
+                  />
+                );
+              }
+              return (
+                <GeoJSON
+                  key={`topo-${cfg.key}`}
+                  data={topoLayerData[cfg.key]}
+                  style={() => getTopoStyle(cfg)}
+                  onEachFeature={(feature, layer) => {
+                    const p = feature.properties || {};
+                    const label = p.NAMOBJ || p.NAMA || p.nama || p.REMARK || cfg.label;
+                    const extra = Object.entries(p)
+                      .filter(([k,v]) => v && !['FID','OBJECTID','REMARK','LUASWH','KELILINGWH'].includes(k))
+                      .slice(0, 5)
+                      .map(([k,v]) => `<p><strong>${k}:</strong> ${v}</p>`).join('');
+                    layer.bindPopup(`<div class="custom-popup"><h4 style="color:${cfg.color}">${cfg.label}</h4><p>${label}</p>${extra}<p style="font-size:.8em;color:#64748b;margin-top:6px">Sumber: BIG 1:25.000</p></div>`);
+                    if (cfg.type === 'AR') {
+                      const def = getTopoStyle(cfg);
+                      layer.on({
+                        mouseover: () => layer.setStyle({ ...def, fillOpacity: Math.min((def.fillOpacity||0.4)+0.2, 0.85), weight: (def.weight||1)+1 }),
+                        mouseout:  () => layer.setStyle(def),
+                      });
+                    }
+                  }}
+                />
+              );
+            })}
+
+            {/* ── ML picked location marker */}
+            {mlPickedPoint && (() => {
+              const mlColor = (cls) => cls === 'tinggi' ? '#dc2626' : cls === 'sedang' ? '#d97706' : '#16a34a';
+              const cls = mlResult?.predicted_class;
+              const markerColor = cls ? mlColor(cls) : '#0284c7';
+              return (
+                <CircleMarker
+                  key={`ml-loc-${mlPickedPoint.lat}-${mlPickedPoint.lng}`}
+                  center={[mlPickedPoint.lat, mlPickedPoint.lng]}
+                  radius={11}
+                  pathOptions={{ color: markerColor, fillColor: markerColor, fillOpacity: 0.5, weight: 2.5, dashArray: cls ? '5,3' : '4,4' }}
+                >
+                  <Popup>
+                    <div className="custom-popup">
+                      <h4>Lokasi Anda</h4>
+                      <p><b>Koordinat:</b> {mlPickedPoint.lat.toFixed(5)}, {mlPickedPoint.lng.toFixed(5)}</p>
+                      {cls && <>
+                        <p><b>Risiko Banjir:</b> <span style={{color: markerColor, fontWeight: 700, textTransform:'capitalize'}}>{cls}</span></p>
+                        <p><b>Skor:</b> {mlResult.risk_score}/100</p>
+                      </>}
+                      {!cls && <p style={{color:'#94a3b8',fontSize:'.8em'}}>Isi form dan jalankan analisis</p>}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })()}
+
             {/* ── Priority circle markers */}
             {selectedAnalysis==='priority' && priorityAreas.map(area=>(
               <CircleMarker key={`pri-${area.id}`} center={[area.lat,area.lng]}
@@ -1138,6 +1810,21 @@ function MapDashboard({ onBack }) {
                         <span style={{color:'#475569'}}>{l}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {showMlLayer && mlResult && mlPickedPoint && (
+                  <div style={{marginTop:'.8rem',paddingTop:'.8rem',borderTop:'1px solid #e2e8f0'}}>
+                    <div style={{fontSize:'.72rem',fontWeight:'700',color:'#475569',marginBottom:'.4rem',textTransform:'uppercase',letterSpacing:'.06em'}}>Risiko Banjir</div>
+                    {[['#dc2626','Tinggi'],['#d97706','Sedang'],['#16a34a','Rendah']].map(([c,l])=>{
+                      const active = l.toLowerCase() === mlResult.predicted_class;
+                      return (
+                        <div key={l} style={{display:'flex',alignItems:'center',gap:'.5rem',fontSize:'.78rem',marginBottom:'.25rem',opacity:active?1:0.35}}>
+                          <span style={{width:'10px',height:'10px',borderRadius:'3px',background:c,flexShrink:0,boxShadow:active?`0 0 4px ${c}80`:''}}></span>
+                          <span style={{color:active?c:'#64748b',fontWeight:active?'700':'400'}}>{l}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

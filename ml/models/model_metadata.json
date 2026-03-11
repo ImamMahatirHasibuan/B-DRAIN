@@ -1,0 +1,52 @@
+{
+  "model_name": "Gradient Boosting",
+  "cv_accuracy": 0.8156146179401993,
+  "cv_macro_f1": 0.7066820468122869,
+  "feature_columns": [
+    "shape_area",
+    "shape_leng",
+    "compactness",
+    "centroid_lat",
+    "centroid_lon",
+    "is_bandang",
+    "elev_mean",
+    "elev_min",
+    "sungai_density",
+    "dist_to_river",
+    "pct_pemukiman",
+    "pct_sawah",
+    "jumlah_titik_banjir",
+    "masa_tanggap_darurat_hari",
+    "severity_score"
+  ],
+  "label_classes": [
+    "rendah",
+    "sedang",
+    "tinggi"
+  ],
+  "label_mapping": {
+    "rendah": 0,
+    "sedang": 1,
+    "tinggi": 2
+  },
+  "training_samples": 212,
+  "class_distribution": {
+    "tinggi": 150,
+    "sedang": 48,
+    "rendah": 14
+  },
+  "all_models_cv": {
+    "Random Forest": {
+      "accuracy": 0.721373200442968,
+      "macro_f1": 0.5612651572253733
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.8156146179401993,
+      "macro_f1": 0.7066820468122869
+    },
+    "XGBoost": {
+      "accuracy": 0.8159468438538205,
+      "macro_f1": 0.6731900876543927
+    }
+  }
+}
