@@ -30,6 +30,16 @@ body {
   min-height: 100%;
 }
 
+@supports (height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+
+  #root {
+    min-height: 100dvh;
+  }
+}
+
 /* Leaflet map fixes */
 .leaflet-container {
   font-family: 'Inter', system-ui, sans-serif;

@@ -967,6 +967,36 @@ const MapDashboard = ({ onBack }) => {
   const floodRiskAreaCount = (floodRiskData && floodRiskData.features && floodRiskData.features.length)
     ? floodRiskData.features.length
     : new Set(floodData.map(i => i.kecamatan)).size;
+  const isMobileViewport = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+  const mobileNavItems = [
+    { tab: 'overview', label: 'Overview', icon: <Activity size={18} /> },
+    { tab: 'layers', label: 'Layers', icon: <Layers size={18} /> },
+    { tab: 'analytics', label: 'Analytics', icon: <TrendingUp size={18} /> },
+    { tab: 'spatial', label: 'Spatial', icon: <MapIcon size={18} /> },
+    { tab: 'ai', label: 'Risiko', icon: <Brain size={18} /> },
+  ];
+
+  const handleMenuToggle = () => {
+    if (isMobileViewport) {
+      setIsMinimized(false);
+    }
+    setSidebarOpen(open => !open);
+  };
+
+  const handleMobileTabSelect = (tab) => {
+    setActiveTab(tab);
+    if (isMobileViewport) {
+      setIsMinimized(false);
+      setSidebarOpen(true);
+    }
+  };
+
+  const handleMapMinimizeToggle = () => {
+    if (isMobileViewport) {
+      setSidebarOpen(false);
+    }
+    setIsMinimized(minimized => !minimized);
+  };
 
   return (
     <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
@@ -995,18 +1025,22 @@ const MapDashboard = ({ onBack }) => {
             </div>
             <button className="icon-btn" onClick={toggleDarkMode} title="Toggle Dark Mode">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
             <button className="icon-btn" onClick={toggleFullscreen} title="Fullscreen">{fullscreen ? <Minimize2 size={20}/> : <Maximize2 size={20}/>}</button>
-            <button className="menu-btn" onClick={() => setSidebarOpen(s => !s)}>{sidebarOpen ? <X size={24}/> : <Menu size={23}/>}</button>
+            <button className="menu-btn" onClick={handleMenuToggle}>{sidebarOpen ? <X size={24}/> : <Menu size={23}/>}</button>
           </div>
         </div>
       </header>
 
       <div className="main-content">
 
+        {isMobileViewport && sidebarOpen && (
+          <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+        )}
+
         {/* SIDEBAR */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
           <div className="sidebar-tabs">
             {[['overview','Overview',<Activity size={18}/>],['layers','Layers',<Layers size={18}/>],['analytics','Analytics',<TrendingUp size={18}/>],['spatial','Spatial',<MapIcon size={18}/>],['ai','Risiko',<Brain size={18}/>]].map(([tab,label,icon]) => (
-              <button key={tab} className={`tab-btn ${activeTab===tab?'active':''}`} onClick={()=>setActiveTab(tab)}>
+              <button key={tab} className={`tab-btn ${activeTab===tab?'active':''}`} onClick={()=>{ handleMobileTabSelect(tab); }}>
                 {icon}<span>{label}</span>
               </button>
             ))}
@@ -1569,7 +1603,7 @@ const MapDashboard = ({ onBack }) => {
 
           {/* ── Map overlay info panel & minimize btn */}
           <div className="map-overlay">
-            <button className="map-minimize-btn" onClick={() => setIsMinimized(!isMinimized)} title={isMinimized ? "Restore" : "Minimize"}>
+            <button className="map-minimize-btn" onClick={handleMapMinimizeToggle} title={isMinimized ? "Restore" : "Minimize"}>
               {isMinimized ? <Maximize2 size={18}/> : <Minimize2 size={18}/>}
             </button>
             <div style={{
@@ -1662,6 +1696,21 @@ const MapDashboard = ({ onBack }) => {
         </main>
 
       </div>
+
+      {isMobileViewport && (
+        <nav className="mobile-bottom-nav" aria-label="Quick sections">
+          {mobileNavItems.map((item) => (
+            <button
+              key={item.tab}
+              className={`mobile-bottom-nav-btn ${activeTab === item.tab ? 'active' : ''}`}
+              onClick={() => { handleMobileTabSelect(item.tab); }}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }
