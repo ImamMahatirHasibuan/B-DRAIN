@@ -1,0 +1,3 @@
+# Backend runtime deps remain in requirements.txt.
+# Keep dev requirements minimal to avoid reinstalling runtime pins on Python 3.13.
+pytest==8.3.5

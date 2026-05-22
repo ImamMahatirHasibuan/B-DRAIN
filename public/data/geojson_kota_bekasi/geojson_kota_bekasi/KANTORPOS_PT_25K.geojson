@@ -1,0 +1,8 @@
+{"type":"FeatureCollection", "features": [
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.91725205400007,-6.292191000999935,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","FCODE":"","JNKPOS":999,"REMARK":"Kantor Pos Lainnya","SRS_ID":"","LCODE":"HC0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.93358801200009,-6.278537296999957,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","FCODE":"","JNKPOS":999,"REMARK":"Kantor Pos Lainnya","SRS_ID":"","LCODE":"HC0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.98489341600003,-6.322545140999978,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","FCODE":"","JNKPOS":999,"REMARK":"Kantor Pos Lainnya","SRS_ID":"","LCODE":"HC0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.97428546200007,-6.232077034999975,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","FCODE":"","JNKPOS":999,"REMARK":"Kantor Pos Lainnya","SRS_ID":"","LCODE":"HC0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.96328302100005,-6.232111521999968,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","FCODE":"","JNKPOS":999,"REMARK":"Kantor Pos Lainnya","SRS_ID":"","LCODE":"HC0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.97709579500008,-6.209976653999945,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","FCODE":"","JNKPOS":999,"REMARK":"Kantor Pos Lainnya","SRS_ID":"","LCODE":"HC0080","METADATA":""}}
+]}

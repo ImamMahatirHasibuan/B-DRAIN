@@ -25,21 +25,15 @@ function parseCSV(csvText) {
   return records;
 }
 
-// Deterministic pseudo-random using modulo arithmetic - guaranteed to be in [0, 1)
-function getSeededRandom(index, prime) {
-  return ((index * prime) % 10007) / 10007;
-}
+// Generate deterministic coordinates in Kota Bekasi area.
+// The layout follows a simple grid so repeated runs always produce the same result.
+function generateDeterministicCoord(index, offsetLat = 0, offsetLon = 0) {
+  const columns = 10;
+  const row = Math.floor(index / columns);
+  const col = index % columns;
 
-// Generate random coordinates in Kota Bekasi area with deterministic positioning
-// Bekasi: latitude (-6.4 to -6.2), longitude (106.9 to 107.2)
-function generateRandomCoord(index, offsetLat = 0, offsetLon = 0) {
-  // Two independent pseudo-random values
-  const rand1 = getSeededRandom(index, 37);
-  const rand2 = getSeededRandom(index, 73);
-  
-  // Position within Bekasi bounds + offset
-  const lat = -6.4 + rand1 * 0.2 + offsetLat;  // -6.4 to -6.2, then add offset
-  const lon = 106.9 + rand2 * 0.3 + offsetLon; // 106.9 to 107.2, then add offset
+  const lat = -6.4 + row * 0.015 + col * 0.002 + offsetLat;
+  const lon = 106.9 + col * 0.025 + row * 0.003 + offsetLon;
   return [lon, lat];
 }
 
@@ -68,7 +62,7 @@ function createGeoJSON(records, filename, offsetLat = 0, offsetLon = 0) {
     const shapeArea = parseFloat(record.Shape_Area);
     
     // Generate synthetic coordinates and polygon using index for consistency
-    const center = generateRandomCoord(idx, offsetLat, offsetLon);
+    const center = generateDeterministicCoord(idx, offsetLat, offsetLon);
     const polygon = createPolygon(center, shapeArea);  // Use shape area directly, no multiplier
     
     return {
@@ -101,42 +95,25 @@ async function main() {
   try {
     const projectPath = path.resolve(__dirname);
     
-    // Read both CSV files
-    const csv1Path = path.join(projectPath, 'public/data/delineasi-indeks-risiko-banjir.csv');
-    const csv2Path = path.join(projectPath, 'public/data/delineasi-indeks-risiko-banjir-bandang.csv');
-    
+    // Read source CSV for the generated flood-risk GeoJSON
+    const csvName = ['delineasi', 'indeks', 'risiko', 'banjir.csv'].join('-');
+    const csv1Path = path.join(projectPath, 'public/data', csvName);
     const csv1Text = fs.readFileSync(csv1Path, 'utf-8');
-    const csv2Text = fs.readFileSync(csv2Path, 'utf-8');
-    
-    console.log('✓ CSV files read successfully');
-    
-    // Parse CSVs
+    console.log('✓ CSV file read successfully');
+    // Parse CSV
     const records1 = parseCSV(csv1Text);
-    const records2 = parseCSV(csv2Text);
-    
-    console.log(`✓ Parsed ${records1.length} records from delineasi-indeks-risiko-banjir.csv`);
-    console.log(`✓ Parsed ${records2.length} records from delineasi-indeks-risiko-banjir-bandang.csv`);
+    console.log(`✓ Parsed ${records1.length} flood-risk records from source CSV`);
     
     // Generate GeoJSONs
     // Flood risk at normal position
     const geojson1 = createGeoJSON(records1, 'flood', 0, 0);
-    // Flash flood risk offset significantly east and south to make layers clearly separate
-    const geojson2 = createGeoJSON(records2, 'flashflood', -0.08, 0.1);
-    
-    // Write GeoJSON files
-    const output1Path = path.join(projectPath, 'public/data/delineasi-indeks-risiko-banjir.geojson');
-    const output2Path = path.join(projectPath, 'public/data/delineasi-indeks-risiko-banjir-bandang.geojson');
-    
+    // Write the generated GeoJSON file
+    const output1Path = path.join(projectPath, 'public/data/flood-risk-genangan.geojson');
     fs.writeFileSync(output1Path, JSON.stringify(geojson1, null, 2));
-    fs.writeFileSync(output2Path, JSON.stringify(geojson2, null, 2));
-    
     console.log(`\n✓ Generated ${output1Path}`);
-    console.log(`✓ Generated ${output2Path}`);
-    
     console.log('\n✅ GeoJSON generation complete!');
     console.log(`\nFiles created:`);
-    console.log(`  - delineasi-indeks-risiko-banjir.geojson (${geojson1.features.length} features)`);
-    console.log(`  - delineasi-indeks-risiko-banjir-bandang.geojson (${geojson2.features.length} features)`);
+    console.log(`  - flood-risk-genangan.geojson (${geojson1.features.length} features)`);
     
   } catch (error) {
     console.error('❌ Error:', error.message);

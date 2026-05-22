@@ -818,6 +818,9 @@ body {
   background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
   color: white;
   border-radius: 16px 16px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .modal-header h2 {

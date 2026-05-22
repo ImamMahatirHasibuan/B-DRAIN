@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import json
 
-# Load one of the GeoJSON files
-with open('public/data/delineasi-indeks-risiko-banjir.geojson', 'r') as f:
+# Load historical flood data
+with open('public/data/data_banjir.geojson', 'r') as f:
     data = json.load(f)
 
-# Test the normalizeRiskClass logic
-def normalizeRiskClass(value):
+# Test the severity normalization logic
+def normalizeSeverity(value):
     if not value:
         return 'unknown'
     normalized = str(value).lower().strip()
@@ -23,15 +23,15 @@ results = {'tinggi': [], 'sedang': [], 'rendah': [], 'unknown': []}
 
 for feature in data['features']:
     props = feature.get('properties', {})
-    kelas = props.get('Kelas')
-    normalized = normalizeRiskClass(kelas)
+    severity = props.get('severity', props.get('severity_historis'))
+    normalized = normalizeSeverity(severity)
     results[normalized].append({
-        'FID': props.get('FID'),
-        'Kelas': kelas,
+        'kecamatan': props.get('kecamatan', props.get('nama_kecamatan')),
+        'severity': severity,
         'normalized': normalized
     })
 
-print("Classification analysis:")
+print("Severity analysis:")
 for key, items in results.items():
     print(f"\n{key}: {len(items)} features")
     if items:
@@ -40,6 +40,6 @@ for key, items in results.items():
 # Check for any issues
 for feature in data['features'][:20]:
     props = feature.get('properties', {})
-    kelas = props.get('Kelas')
-    if not kelas:
-        print(f"❌ Feature {props.get('FID')} has empty Kelas!")
+    severity = props.get('severity', props.get('severity_historis'))
+    if not severity:
+        print(f"❌ Feature {props.get('kecamatan', props.get('nama_kecamatan'))} has empty severity!")

@@ -796,6 +796,21 @@
   font-weight: 600;
 }
 
+.severity-badge-small.high {
+  background: linear-gradient(135deg, #2563EB, #1E3A8A);
+  color: #fff;
+}
+
+.severity-badge-small.medium {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+
+.severity-badge-small.low {
+  background: linear-gradient(135deg, #10b981, #047857);
+  color: #fff;
+}
+
 /* ===== DATA TABLE ===== */
 .data-table-wrapper {
   max-height: 600px;
@@ -1173,7 +1188,7 @@
 }
 
 .severity-badge.high {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  background: linear-gradient(135deg, #2563EB, #1E3A8A);
   color: #fff;
 }
 

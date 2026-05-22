@@ -16,6 +16,7 @@ import foto4 from './assets/foto4.jpg';
 import foto5 from './assets/foto5.jpg';
 import foto6 from './assets/foto6.jpg';
 import foto7 from './assets/foto7.jpg';
+import photoPng from './assets/photo.png';
 
 function App() {
   const [showMap, setShowMap] = useState(false);
@@ -26,11 +27,7 @@ function App() {
   
   const datasets = [
     { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: 'Titik rawan banjir historis 30 kecamatan',          path: '/data/data_banjir.geojson' },
-    { name: 'delineasi-indeks-risiko-banjir.geojson',             type: 'GeoJSON', desc: 'Delineasi indeks risiko banjir genangan (61 area)',  path: '/data/delineasi-indeks-risiko-banjir.geojson' },
-    { name: 'delineasi-indeks-risiko-banjir.csv',                 type: 'CSV',     desc: 'Versi CSV risiko banjir genangan',                  path: '/data/delineasi-indeks-risiko-banjir.csv' },
-    { name: 'delineasi-indeks-risiko-banjir-bandang.geojson',     type: 'GeoJSON', desc: 'Delineasi indeks risiko banjir bandang (61 area)',   path: '/data/delineasi-indeks-risiko-banjir-bandang.geojson' },
-    { name: 'delineasi-indeks-risiko-banjir-bandang.csv',         type: 'CSV',     desc: 'Versi CSV risiko banjir bandang',                   path: '/data/delineasi-indeks-risiko-banjir-bandang.csv' },
-    { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Infrastruktur drainase (OpenStreetMap)',             path: '/data/export.geojson' },
+    { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Sungai Utama / infrastruktur air (OpenStreetMap)',   path: '/data/export.geojson' },
     { name: 'sebaran-rumah-sakit-jawa-barat.geojson',             type: 'GeoJSON', desc: 'Sebaran fasilitas kesehatan Jawa Barat',            path: '/data/sebaran-rumah-sakit-jawa-barat.geojson' },
   ];
 
@@ -44,12 +41,6 @@ function App() {
       { name: 'SUNGAI_AR_25K.geojson',  desc: 'Area sungai (poligon)',    path: '/data/geojson_kota_bekasi/SUNGAI_AR_25K.geojson' },
       { name: 'DANAU_AR_25K.geojson',   desc: 'Area danau / waduk',       path: '/data/geojson_kota_bekasi/DANAU_AR_25K.geojson' },
       { name: 'TAMBANGAN_LN_25K.geojson', desc: 'Jalur tambangan/penyeberangan', path: '/data/geojson_kota_bekasi/TAMBANGAN_LN_25K.geojson' },
-    ]},
-    { group: 'Pertanian', color: '#16a34a', items: [
-      { name: 'AGRISAWAH_AR_25K.geojson',       desc: 'Area sawah',              path: '/data/geojson_kota_bekasi/AGRISAWAH_AR_25K.geojson' },
-      { name: 'AGRILADANG_AR_25K.geojson',      desc: 'Area ladang',             path: '/data/geojson_kota_bekasi/AGRILADANG_AR_25K.geojson' },
-      { name: 'AGRIKEBUN_AR_25K.geojson',       desc: 'Area perkebunan',         path: '/data/geojson_kota_bekasi/AGRIKEBUN_AR_25K.geojson' },
-      { name: 'AGRITANAMCAMPUR_AR_25K.geojson', desc: 'Area tanaman campuran',   path: '/data/geojson_kota_bekasi/AGRITANAMCAMPUR_AR_25K.geojson' },
     ]},
     { group: 'Vegetasi', color: '#78350f', items: [
       { name: 'NONAGRIALANG_AR_25K.geojson',        desc: 'Area alang-alang',   path: '/data/geojson_kota_bekasi/NONAGRIALANG_AR_25K.geojson' },
@@ -97,7 +88,6 @@ function App() {
     link.click();
     document.body.removeChild(link);
   };
-  console.log('App is rendering!', showMap);
 
   if (showMap) {
     return <MapDashboard onBack={() => setShowMap(false)} />;
@@ -131,12 +121,12 @@ function App() {
             </h1>
             <p>
               Platform Geodashboard interaktif untuk visualisasi data spasial titik rawan banjir 
-              dan infrastruktur drainase Kota Bekasi. Dilengkapi fitur analisis spasial untuk 
+              dan Sungai Utama Kota Bekasi. Dilengkapi fitur analisis spasial untuk 
               identifikasi area prioritas perbaikan infrastruktur.
             </p>
             <div className="hero-actions">
               <button className="btn-primary" onClick={() => setShowMap(true)}>
-                <Activity size={20} />
+                <img src={analysisIcon} alt="Explore" style={{width:'20px',height:'20px',objectFit:'contain'}} />
                 Explore Geodashboard
               </button>
               <button className="btn-secondary" onClick={() => setShowDatasetModal(true)}>
@@ -162,7 +152,7 @@ function App() {
           <div className="hero-visual">
             <div className="visual-card">
               <div className="card-header">
-                <Activity size={20} />
+                <img src={photoPng} alt="Dokumentasi" style={{width:'24px',height:'24px',objectFit:'contain',borderRadius:'4px'}} />
                 <span>Dokumentasi</span>
               </div>
               <div className="visual-content">
@@ -192,23 +182,23 @@ function App() {
           <div className="section-header">
             <span className="section-tag">Tentang Project</span>
             <h2>Geodashboard Berbasis Web untuk Analisis Spasial</h2>
-            <p>Platform SIG (Sistem Informasi Geografis) untuk visualisasi dan analisis titik rawan banjir serta infrastruktur drainase</p>
+            <p>Platform SIG (Sistem Informasi Geografis) untuk visualisasi dan analisis titik rawan banjir serta Sungai Utama</p>
           </div>
           <div className="about-grid">
             <div className="about-card">
               <div className="about-icon"><img src={mapIcon} alt="Map" style={{width: '48px', height: '48px'}} /></div>
               <h3>Visualisasi Spasial Interaktif</h3>
-              <p>Peta interaktif dengan Leaflet.js menampilkan data Shapefile (.shp) dan GeoJSON untuk visualisasi area drainase dan titik banjir di 12 kecamatan Bekasi.</p>
+              <p>Peta interaktif dengan Leaflet.js menampilkan data Shapefile (.shp) dan GeoJSON untuk visualisasi area Sungai Utama dan titik banjir di 12 kecamatan Bekasi.</p>
             </div>
             <div className="about-card">
               <div className="about-icon"><img src={analysisIcon} alt="Analysis" style={{width: '48px', height: '48px'}} /></div>
               <h3>Analisis Spasial</h3>
-              <p>Fitur Buffer Analysis dan Proximity Analysis untuk mengidentifikasi korelasi antara titik genangan dengan saluran drainase terdekat.</p>
+              <p>Fitur Buffer Analysis dan Proximity Analysis untuk mengidentifikasi korelasi antara titik genangan dengan Sungai Utama terdekat.</p>
             </div>
             <div className="about-card">
               <div className="about-icon"><img src={emergencyIcon} alt="Priority" style={{width: '48px', height: '48px'}} /></div>
               <h3>Identifikasi Area Prioritas</h3>
-              <p>Sistem scoring otomatis untuk menentukan area yang memerlukan perbaikan infrastruktur drainase secara mendesak.</p>
+              <p>Sistem scoring otomatis untuk menentukan area yang memerlukan perbaikan infrastruktur sungai secara mendesak.</p>
             </div>
             <div className="about-card">
               <div className="about-icon"><img src={barChartIcon} alt="Analytics" style={{width: '48px', height: '48px'}} /></div>
@@ -240,7 +230,7 @@ function App() {
               <div className="feature-content">
                 <img src={analysisIcon} alt="Spatial Analysis" className="feature-icon" style={{width: '32px', height: '32px'}} />
                 <h3>Spatial Analysis Tools</h3>
-                <p>Fitur analisis spasial untuk identifikasi korelasi titik banjir dengan infrastruktur drainase</p>
+                <p>Fitur analisis spasial untuk identifikasi korelasi titik banjir dengan Sungai Utama</p>
                 <ul>
                   <li>✓ Buffer Analysis</li>
                   <li>✓ Proximity Analysis</li>
@@ -251,7 +241,7 @@ function App() {
             <div className="feature-card">
               <img src={mapIcon} alt="Interactive GIS" className="card-icon" style={{width: '28px', height: '28px'}} />
               <h3>Interactive GIS Layers</h3>
-              <p>Multiple layers: Drainage system, Flood points, dan Buffer zones visualization</p>
+              <p>Multiple layers: Sungai Utama, Flood points, dan Buffer zones visualization</p>
             </div>
             <div className="feature-card">
               <img src={databaseIcon} alt="Shapefile Support" className="card-icon" style={{width: '28px', height: '28px'}} />

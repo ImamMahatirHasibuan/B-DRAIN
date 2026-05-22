@@ -1,0 +1,12 @@
+{"type":"FeatureCollection", "features": [
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.98108671500006,-6.347750042999962,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.98671710100007,-6.302855920999946,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.93098448700005,-6.288063561999934,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.99711951300009,-6.276471669999978,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.98770612000004,-6.183049611999934,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.95528187300005,-6.248387052999931,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.99961525900005,-6.242809137999927,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.99421118100008,-6.2459044359999325,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.99227365800004,-6.2352072119999775,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[106.91491319900007,-6.384873693999964,0,-1.7976931348623157e+308]},"properties":{"NAMOBJ":"","LUAS":0,"FCODE":"","REMARK":"Menara","SRS_ID":"","LCODE":"GG0080","METADATA":""}}
+]}
