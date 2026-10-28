@@ -1,9 +1,12 @@
+/* Stylesheet landing page (App.jsx). Dimuat setelah index.css, sehingga aturan di sini dapat menimpa gaya global. */
+/* Reset dasar: sama dengan reset di index.css. */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Font sistem dan warna dasar body. Warna latar di sini menimpa latar body dari index.css. */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -16,7 +19,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Navbar */
+/* Navbar: bar tetap di atas layar dengan latar transparan dan efek blur. Logo di kiri, tautan dan tombol Visit Dashboard di kanan. */
 .navbar {
   position: fixed;
   top: 0;
@@ -86,7 +89,7 @@ body {
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
 }
 
-/* Hero Section */
+/* Hero Section: latar gradien biru muda, tata letak dua kolom (teks dan kartu visual), serta gaya judul dan tombol aksi. */
 .hero-section {
   min-height: 100vh;
   padding: 8rem 5% 4rem;
@@ -222,7 +225,7 @@ body {
   margin-top: 0.4rem;
 }
 
-/* Visual Card */
+/* Visual Card: kartu di kolom kanan hero yang memuat grid foto dokumentasi dan ringkasan total foto. */
 .hero-visual {
   position: relative;
 }
@@ -245,6 +248,7 @@ body {
   font-weight: 600;
 }
 
+/* Selector berikut (.map-preview, .photo-carousel, .carousel-*, .indicator, .map-grid, .grid-cell) tidak ditemukan di JSX App.jsx. Tidak dihapus. */
 .map-preview {
   background: rgba(224, 242, 254, 0.5);
   border-radius: 12px;
@@ -374,6 +378,7 @@ body {
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* Animasi pulse: hanya dipakai oleh .grid-cell.active, yang tidak dirender di App.jsx. */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
@@ -426,7 +431,7 @@ body {
   font-size: 1.1rem;
 }
 
-/* About Section */
+/* About, Features, dan Data Section: padding dan latar dasar. Judul section (.section-header) dipakai bersama. Features memakai latar gradien. */
 .about-section,
 .features-section,
 .data-section {
@@ -509,7 +514,7 @@ body {
   font-size: 0.95rem;
 }
 
-/* Features Section */
+/* Features Section: grid tiga kolom (2fr 1fr 1fr). Kartu besar (.feature-large) memakan dua baris, dan kartu kecil memiliki efek hover. */
 .features-section {
   background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
 }
@@ -541,6 +546,7 @@ body {
   align-items: flex-end;
 }
 
+/* Ilustrasi batang dekoratif pada kartu fitur besar. Ini visual statis, bukan grafik dari data. */
 .chart-mockup {
   width: 100%;
   display: flex;
@@ -623,7 +629,7 @@ body {
   line-height: 1.6;
 }
 
-/* Data Section */
+/* Data Section: tata letak dua kolom untuk teks dan kotak contoh CSV, serta gaya tombol Start Exploring (.btn-data). */
 .data-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -686,7 +692,7 @@ body {
   border-bottom: 1px solid rgba(14, 165, 233, 0.1);
 }
 
-/* Footer */
+/* Footer: tata letak flex (brand, informasi project, tautan ikon) dan baris hak cipta di bagian bawah. */
 .footer {
   padding: 3rem 5%;
   background: #f0f9ff;
@@ -739,7 +745,8 @@ body {
   font-size: 0.9rem;
 }
 
-/* Responsive */
+/* Responsive: breakpoint 1024px, 768px, dan 480px. Pada layar 768px ke bawah, tautan navbar disembunyikan. */
+/* Breakpoint 1024px (tablet): hero dan data menjadi satu kolom, fitur menjadi dua kolom. */
 @media (max-width: 1024px) {
   .hero-content {
     grid-template-columns: 1fr;
@@ -762,7 +769,7 @@ body {
   }
 }
 
-/* Dataset Modal */
+/* Dataset Modal: overlay gelap, kontainer putih, header bergradien, daftar item dataset, dan tombol unduh. */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -778,6 +785,7 @@ body {
   animation: fadeIn 0.3s ease-out;
 }
 
+/* Animasi kemunculan overlay modal. */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -798,6 +806,7 @@ body {
   animation: slideUp 0.3s ease-out;
 }
 
+/* Animasi geser ke atas untuk kontainer modal. */
 @keyframes slideUp {
   from {
     transform: translateY(30px);
@@ -927,6 +936,7 @@ body {
   transform: translateY(0);
 }
 
+/* Breakpoint 768px (mobile): navbar, modal, dan daftar dataset menjadi satu kolom. Sub-bagian di dalamnya menyesuaikan tiap komponen. */
 @media (max-width: 768px) {
   .nav-links {
     gap: 1.5rem;
@@ -972,7 +982,7 @@ body {
     justify-content: center;
   }
 
-  /* Hero Section Mobile */
+  /* Hero (mobile): tata letak satu kolom, teks rata tengah, dan tombol aksi selebar penuh. */
   .hero-content {
     grid-template-columns: 1fr;
     gap: 1.5rem;
@@ -1028,7 +1038,7 @@ body {
     padding: 1rem;
   }
 
-  /* About Section Mobile */
+  /* About (mobile): kartu tentang project menjadi satu kolom. */
   .about-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
@@ -1046,7 +1056,7 @@ body {
     font-size: 0.9rem;
   }
 
-  /* Features Section Mobile */
+  /* Fitur (mobile): ukuran judul section dan kartu fitur diperkecil. */
   .section-header h2 {
     font-size: 2rem;
   }
@@ -1063,7 +1073,7 @@ body {
     font-size: 0.9rem;
   }
 
-  /* Data Section Mobile */
+  /* Data (mobile): satu kolom dengan teks rata tengah. */
   .data-content {
     grid-template-columns: 1fr;
     gap: 2rem;
@@ -1084,13 +1094,13 @@ body {
     font-size: 0.8rem;
   }
 
-  /* Photos Grid Mobile */
+  /* Grid foto dokumentasi (mobile): dua kolom. */
   .photos-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.8rem;
   }
 
-  /* Data Box Mobile */
+  /* Kotak contoh data (mobile): jarak atas dan ukuran teks baris diperkecil. */
   .data-box {
     margin-top: 1.5rem;
   }
@@ -1105,7 +1115,7 @@ body {
     font-size: 0.8rem;
   }
 
-  /* Footer Mobile */
+  /* Footer (mobile): satu kolom dengan teks rata tengah. */
   .footer-content {
     grid-template-columns: 1fr;
     gap: 2rem;
@@ -1125,7 +1135,7 @@ body {
     font-size: 0.85rem;
   }
 
-  /* Navbar Mobile */
+  /* Navbar (mobile): padding dan ukuran logo diperkecil. */
   .navbar {
     padding: 0.5rem 1.5%;
   }
@@ -1139,13 +1149,14 @@ body {
     font-size: 1rem;
   }
 
-  /* Buttons Mobile */
+  /* Tombol (mobile): tinggi dan lebar minimum 44px agar mudah disentuh. Selector button ini berlaku untuk semua elemen button. */
   button {
     min-height: 44px;
     min-width: 44px;
   }
 }
 
+/* Breakpoint 480px (mobile kecil): padding, ukuran font, dan jarak dikurangi lebih lanjut. */
 @media (max-width: 480px) {
   .hero-section {
     padding: 4.5rem 0.85rem 2rem;
@@ -1215,7 +1226,7 @@ body {
     font-size: 0.9rem;
   }
 
-  /* About Section Extra Mobile */
+  /* About dan Fitur (layar 480px ke bawah): padding dan ukuran teks diperkecil. */
   .about-section, .features-section, .data-section {
     padding: 3rem 0.85rem;
   }
@@ -1245,7 +1256,7 @@ body {
     font-size: 2rem;
   }
 
-  /* Photos Grid Small Mobile */
+  /* Grid foto dokumentasi (layar 480px ke bawah): satu kolom dengan tinggi tetap 200px. */
   .photos-grid {
     grid-template-columns: 1fr;
     gap: 0.6rem;
@@ -1256,7 +1267,7 @@ body {
     height: 200px;
   }
 
-  /* Data Section Small Mobile */
+  /* Data (layar 480px ke bawah): jarak dan ukuran teks badge diperkecil. */
   .data-content {
     gap: 1.5rem;
   }
@@ -1284,7 +1295,7 @@ body {
     font-size: 0.85rem;
   }
 
-  /* Modal Small Mobile */
+  /* Modal (layar 480px ke bawah): lebar hampir penuh dan teks header diperkecil. */
   .modal-content {
     width: 98%;
   }
@@ -1298,7 +1309,7 @@ body {
     gap: 0.5rem;
   }
 
-  /* Footer Small Mobile */
+  /* Footer (layar 480px ke bawah): logo dan teks diperkecil. */
   .footer-logo {
     width: 50px !important;
     height: 50px !important;
@@ -1316,7 +1327,7 @@ body {
     font-size: 0.75rem;
   }
 
-  /* Hero Background Mobile */
+  /* Dekorasi latar hero (.hero-background) pada layar 480px ke bawah. Kelas ini tidak dirender di App.jsx. */
   .hero-background {
     width: 400px;
     height: 400px;
@@ -1324,7 +1335,7 @@ body {
     right: -30%;
   }
 
-  /* General */
+  /* Umum: padding horizontal section-container pada layar 480px ke bawah. */
   .section-container {
     padding: 0 1rem;
   }

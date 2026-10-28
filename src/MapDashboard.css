@@ -2,6 +2,7 @@
    GEODASHBOARD BEKASI - WHITE BLUE WATER THEME
    ============================================ */
 
+/* Reset dasar: menghapus margin dan padding bawaan serta memakai box-sizing border-box pada semua elemen. */
 * {
   margin: 0;
   padding: 0;
@@ -9,6 +10,7 @@
 }
 
 /* ===== MAIN CONTAINER ===== */
+/* Kontainer utama aplikasi: tinggi penuh viewport, tata letak kolom, dan overflow disembunyikan agar scroll ditangani panel di dalamnya. */
 .app-container {
   width: 100%;
   height: 100vh;
@@ -21,6 +23,7 @@
 }
 
 /* ===== LOADING SCREEN ===== */
+/* Layar pemuatan: overlay penuh di atas seluruh konten (z-index 9999) berisi ikon berputar dan bilah progres. */
 .loading-screen {
   position: fixed;
   top: 0;
@@ -45,6 +48,7 @@
   margin-bottom: 1.5rem;
 }
 
+/* Animasi rotasi ikon pemuatan. */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -65,6 +69,7 @@
   animation: progress 2s ease-in-out infinite;
 }
 
+/* Animasi bilah progres: lebar bergerak dari 0 sampai 100 persen secara berulang. */
 @keyframes progress {
   0% { width: 0%; }
   50% { width: 70%; }
@@ -72,6 +77,7 @@
 }
 
 /* ===== HEADER ===== */
+/* Header atas: latar putih transparan dengan blur. Berisi tombol kembali, logo, kotak pencarian, dan tombol ikon. Tata letak header diubah di blok @media 768px dan 480px. */
 .header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
@@ -94,6 +100,7 @@
   gap: 1.5rem;
 }
 
+/* Tombol kembali di area kiri header. */
 .back-btn {
   display: flex;
   align-items: center;
@@ -115,6 +122,7 @@
   transform: translateX(-2px);
 }
 
+/* Tombol menu di header, tanpa latar dan border. */
 .menu-btn {
   padding: 0.6rem;
   background: transparent;
@@ -129,6 +137,7 @@
   background: rgba(14, 165, 233, 0.1);
 }
 
+/* Logo dan judul aplikasi di header. */
 .logo {
   display: flex;
   align-items: center;
@@ -161,12 +170,14 @@
   margin: 0;
 }
 
+/* Kotak pencarian: mengisi ruang fleksibel dengan lebar maksimal 400px. */
 .search-box {
   flex: 1;
   max-width: 400px;
   position: relative;
 }
 
+/* Input pencarian dengan padding kiri lebih besar agar ada ruang untuk ikon. */
 .search-box input {
   width: 100%;
   padding: 0.7rem 1rem 0.7rem 2.5rem;
@@ -184,6 +195,7 @@
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
+/* Ikon di dalam kotak pencarian, diposisikan absolut di tengah vertikal. */
 .search-box svg {
   position: absolute;
   left: 0.8rem;
@@ -198,6 +210,7 @@
   gap: 0.8rem;
 }
 
+/* Tombol ikon di area kanan header. */
 .icon-btn {
   padding: 0.6rem;
   background: rgba(240, 249, 255, 0.8);
@@ -218,6 +231,7 @@
 }
 
 /* ===== MAIN CONTENT ===== */
+/* Area konten utama di bawah header: mengisi sisa tinggi dan berisi sidebar serta peta. */
 .main-content {
   flex: 1;
   display: flex;
@@ -225,6 +239,7 @@
 }
 
 /* ===== SIDEBAR ===== */
+/* Sidebar kiri: lebar tetap 380px di desktop dengan transisi saat dibuka dan ditutup. Di layar kecil berubah menjadi drawer (lihat @media 768px). */
 .sidebar {
   width: 380px;
   background: rgba(255, 255, 255, 0.95);
@@ -236,110 +251,83 @@
   box-shadow: 2px 0 20px rgba(14, 165, 233, 0.08);
 }
 
+/* Latar gelap di belakang drawer. Disembunyikan di desktop dan diaktifkan di blok @media 768px. */
 .sidebar-backdrop {
   display: none;
 }
 
-/* Minimized: only map-section shrinks to corner, sidebar stays unchanged */
-.map-section.minimized {
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  width: 380px;
-  height: 260px;
-  z-index: 400;
-  border: 1px solid rgba(14, 165, 233, 0.25);
-  border-bottom: none;
-  border-right: none;
-  border-radius: 12px 12px 0 0;
-  box-shadow: -4px -4px 24px rgba(14, 165, 233, 0.2);
-  overflow: hidden;
+/* Drawer header with close button — desktop hidden, shown on mobile */
+.sidebar-mobile-header {
+  display: none;
 }
 
-@media (max-width: 1024px) {
-  .map-section.minimized {
-    width: 320px;
-    height: 220px;
-  }
-}
-
-@media (max-width: 768px) {
-  .map-section.minimized {
-    width: min(72vw, 280px);
-    height: 160px;
-    right: 0.75rem;
-    left: auto;
-    bottom: 5.5rem;
-    border-radius: 12px 12px 0 0;
-    z-index: 180;
-  }
-}
-
+/* Keadaan tertutup sidebar di desktop: lebar nol dan garis tepi dihapus. */
 .sidebar.closed {
   width: 0;
   border-right: none;
 }
 
-.sidebar-tabs {
+/* ===== HEADER NAV (main tabs) ===== */
+/* Navigasi tab utama di header, tampil di desktop. Disembunyikan di layar 768px ke bawah dan digantikan .mobile-bottom-nav. */
+.header-nav {
   display: flex;
-  background: rgba(240, 249, 255, 0.8);
-  border-bottom: 1px solid rgba(14, 165, 233, 0.15);
-  padding: 0.5rem;
-  gap: 0.3rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
 }
 
-.sidebar-tabs::-webkit-scrollbar {
-  height: 6px;
-}
-
-.sidebar-tabs::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-tabs::-webkit-scrollbar-thumb {
-  background: rgba(14, 165, 233, 0.3);
-  border-radius: 3px;
-}
-
-.sidebar-tabs::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.5);
-}
-
-.tab-btn {
-  flex: 0 0 auto;
-  min-width: fit-content;
-  padding: 0.7rem 1rem;
+/* Tombol tab: kondisi normal, hover, fokus keyboard (focus-visible), dan aktif dengan garis bawah. */
+.header-nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  min-height: 40px;
   background: transparent;
   border: none;
+  border-radius: 8px;
   color: #64748b;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
   white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
 }
 
-.tab-btn:hover {
-  background: rgba(14, 165, 233, 0.1);
+.header-nav-btn:hover {
+  background: rgba(14, 165, 233, 0.08);
   color: #0369a1;
 }
 
-.tab-btn.active {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
-  color: #fff;
+.header-nav-btn:focus-visible {
+  outline: 2px solid #0284c7;
+  outline-offset: 2px;
 }
 
+.header-nav-btn.active {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+}
+
+/* active underline bar */
+.header-nav-btn.active::after {
+  content: '';
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: -0.3rem;
+  height: 2px;
+  border-radius: 2px;
+  background: #0284c7;
+}
+
+/* Area isi sidebar yang dapat di-scroll secara vertikal. */
 .sidebar-content {
   flex: 1;
-  overflow-y: scroll;
+  overflow-y: auto;
   padding: 1.5rem;
   height: 0;
 }
@@ -364,6 +352,7 @@
 }
 
 /* ===== SECTION HEADERS ===== */
+/* Judul bagian dan label penanda kecil di dalam panel. */
 .section-header {
   display: flex;
   align-items: center;
@@ -380,6 +369,7 @@
   gap: 0.5rem;
 }
 
+/* Label penanda berbentuk pil. */
 .badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
@@ -392,6 +382,7 @@
 }
 
 /* ===== STAT CARDS ===== */
+/* Kartu KPI di tab Ringkasan: grid dua kolom, berubah menjadi satu kolom di layar 1024px ke bawah. */
 .stat-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -399,49 +390,26 @@
   margin-bottom: 1.5rem;
 }
 
+/* Kartu statistik dengan latar putih dan border tipis. Hover mengubah latar dan warna border. */
 .stat-card {
-  padding: 1.2rem;
-  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
   background: #fff;
-  border: 1px solid rgba(14, 165, 233, 0.15);
-  transition: all 0.3s;
+  border: 1px solid #e2e8f0;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
+  background: #f8fafc;
+  border-color: rgba(2, 132, 199, 0.35);
 }
 
 .stat-icon {
   color: #0284c7;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
-.stat-card.gradient-red {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
-  border-color: rgba(239, 68, 68, 0.2);
-}
-
-.stat-card.gradient-blue {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(2, 132, 199, 0.05));
-  border-color: rgba(14, 165, 233, 0.2);
-}
-
-.stat-card.gradient-purple {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.05));
-  border-color: rgba(139, 92, 246, 0.2);
-}
-
-.stat-card.gradient-green {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
-  border-color: rgba(16, 185, 129, 0.2);
-}
-
-.stat-card.gradient-orange {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
-  border-color: rgba(245, 158, 11, 0.2);
-}
-
+/* Category colour is kept as a subtle icon accent only (no card-wide gradient) */
 .stat-card.gradient-red .stat-icon { color: #dc2626; }
 .stat-card.gradient-blue .stat-icon { color: #0284c7; }
 .stat-card.gradient-purple .stat-icon { color: #7c3aed; }
@@ -454,30 +422,33 @@
 }
 
 .stat-value {
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #0c4a6e;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .stat-label {
-  font-size: 0.75rem;
-  color: #64748b;
-  margin-top: 0.3rem;
-  font-weight: 500;
+  font-size: 0.8rem;
+  color: #334155;
+  margin-top: 0.25rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .stat-change {
   font-size: 0.7rem;
-  color: #059669;
-  margin-top: 0.3rem;
+  color: #64748b;
+  margin-top: 0.25rem;
 }
 
 /* ===== CHART SECTION ===== */
+/* Wadah grafik (Recharts). File ini tidak memuat aturan .recharts-*; ukuran grafik diatur oleh ResponsiveContainer di komponen. */
 .chart-section {
   margin-bottom: 1.5rem;
 }
 
+/* Gaya kaca semi transparan dengan blur, dipakai untuk kartu grafik dan panel lain. */
 .glass-effect {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -487,6 +458,7 @@
 }
 
 /* ===== LAYERS SECTION ===== */
+/* Daftar kontrol layer peta di tab Layers, dengan area scroll maksimal 350px. */
 .layer-controls {
   display: flex;
   flex-direction: column;
@@ -516,21 +488,20 @@
   background: rgba(14, 165, 233, 0.6);
 }
 
+/* Kartu satu layer dengan hover yang mengubah latar dan border. */
 .layer-item {
-  background: linear-gradient(135deg, rgba(240, 249, 255, 0.9) 0%, rgba(224, 242, 254, 0.7) 100%);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .layer-item:hover {
-  background: linear-gradient(135deg, rgba(224, 242, 254, 1) 0%, rgba(206, 235, 252, 0.9) 100%);
-  border-color: rgba(2, 132, 199, 0.4);
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);
-  transform: translateY(-2px);
+  background: #f8fafc;
+  border-color: rgba(2, 132, 199, 0.35);
 }
 
+/* Baris label toggle dengan tata letak flex dan area klik selebar kartu. */
 .layer-item label.layer-toggle {
   display: flex;
   align-items: center;
@@ -540,6 +511,7 @@
   width: 100%;
 }
 
+/* Checkbox asli disembunyikan (opacity 0) agar tampilan toggle diatur oleh .toggle-slider. */
 .layer-toggle input[type="checkbox"] {
   position: absolute;
   opacity: 0;
@@ -547,6 +519,7 @@
   height: 0;
 }
 
+/* Visual switch toggle. Status aktif diatur oleh selector :checked di bawah. */
 .toggle-slider {
   position: relative;
   width: 44px;
@@ -557,6 +530,7 @@
   flex-shrink: 0;
 }
 
+/* Bulatan putih pada switch toggle yang bergeser saat aktif. */
 .toggle-slider::after {
   content: '';
   position: absolute;
@@ -571,7 +545,7 @@
 }
 
 .layer-toggle input[type="checkbox"]:checked ~ .toggle-slider {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  background: #0284c7;
 }
 
 .layer-toggle input[type="checkbox"]:checked ~ .toggle-slider::after {
@@ -623,6 +597,7 @@
 }
 
 /* ===== FILTER SECTION ===== */
+/* Dropdown filter data. Gayanya mengikuti kotak pencarian. */
 .filter-section {
   margin-top: 1.5rem;
 }
@@ -647,6 +622,7 @@
 }
 
 /* ===== LEGEND ===== */
+/* Legenda di sidebar: daftar item dengan area scroll maksimal 300px. */
 .legend-section {
   margin-top: 1.5rem;
 }
@@ -721,7 +697,160 @@
   flex-shrink: 0;
 }
 
+/* Label judul grup dalam legenda, ditulis dengan huruf kapital kecil. */
+.legend-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin: 0.75rem 0 0.4rem;
+}
+.legend-group-label:first-of-type {
+  margin-top: 0.25rem;
+}
+
+/* ===== TOPOGRAFI BIG (Layers tab) ===== */
+/* Grup layer topografi di tab Layers: setiap grup memiliki header yang bisa diklik dan body berisi daftar layer dengan checkbox serta swatch warna. */
+.topo-section {
+  margin-top: 1.2rem;
+}
+
+.topo-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #0c4a6e;
+  margin-bottom: 0.6rem;
+}
+
+.topo-heading-count {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.topo-group {
+  margin-bottom: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.topo-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.topo-group-header.active {
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.topo-group-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topo-group-name {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #1e3a5f;
+}
+
+.topo-group-count {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.topo-group-caret {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.topo-group-body {
+  padding: 0.35rem 0.6rem 0.4rem;
+  background: #fff;
+}
+
+.topo-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  margin-bottom: 0.1rem;
+  cursor: pointer;
+}
+
+.topo-layer-row:hover {
+  background: #f1f5f9;
+}
+
+.topo-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #0284c7;
+}
+
+.topo-swatch {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.topo-layer-label {
+  font-size: 0.78rem;
+  color: #374151;
+}
+
+.topo-layer-count {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-left: auto;
+}
+
+/* Dark mode — Topografi & legend group label */
+.dark-mode .topo-heading {
+  color: #e2e8f0;
+}
+.dark-mode .topo-group {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+.dark-mode .topo-group-header {
+  background: rgba(30, 41, 59, 0.6);
+}
+.dark-mode .topo-group-header.active {
+  background: rgba(2, 132, 199, 0.18);
+}
+.dark-mode .topo-group-name {
+  color: #e2e8f0;
+}
+.dark-mode .topo-group-body {
+  background: rgba(15, 23, 42, 0.4);
+}
+.dark-mode .topo-layer-row:hover {
+  background: rgba(51, 65, 85, 0.4);
+}
+.dark-mode .topo-layer-label {
+  color: #cbd5e1;
+}
+.dark-mode .legend-group-label {
+  color: #94a3b8;
+}
+
 /* ===== ANALYTICS ===== */
+/* Kartu analitik: ringkasan metrik dan daftar lokasi berperingkat dengan badge keparahan. */
 .analysis-card {
   background: rgba(240, 249, 255, 0.8);
   border: 1px solid rgba(14, 165, 233, 0.15);
@@ -766,6 +895,7 @@
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
 }
 
+/* Nomor peringkat berbentuk kotak dengan gradien biru. */
 .rank {
   width: 28px;
   height: 28px;
@@ -795,6 +925,7 @@
   margin-top: 0.2rem;
 }
 
+/* Badge keparahan kecil pada daftar lokasi: merah untuk tinggi, kuning untuk sedang, hijau untuk rendah. */
 .severity-badge-small {
   padding: 0.3rem 0.6rem;
   border-radius: 6px;
@@ -803,21 +934,108 @@
 }
 
 .severity-badge-small.high {
-  background: linear-gradient(135deg, #2563EB, #1E3A8A);
+  background: linear-gradient(135deg, #DC2626, #991B1B);
   color: #fff;
 }
 
 .severity-badge-small.medium {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, #F59E0B, #d97706);
   color: #fff;
 }
 
 .severity-badge-small.low {
-  background: linear-gradient(135deg, #10b981, #047857);
+  background: linear-gradient(135deg, #16A34A, #047857);
   color: #fff;
 }
 
+/* ===== ANALYTICS — SCOPED REFINEMENTS ===== */
+/* Simulation status chip (Analytics only) */
+.sim-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* "Estimasi" chip on the river-proximity card */
+.estimate-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+}
+
+/* De-emphasised estimate value (replaces oversized .metric-large here) */
+.metric-estimate {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #0c4a6e;
+  margin: 0.25rem 0 0.35rem;
+}
+
+/* Ranking — differentiate top 1-3 from 4-5 (scoped to Analytics) */
+.analytics-section .rank-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.analytics-section .rank-2 {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+.analytics-section .rank-3 {
+  background: linear-gradient(135deg, #b45309, #92400e);
+}
+.analytics-section .rank-4,
+.analytics-section .rank-5 {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* Calmer hover (remove decorative translateX) — scoped to Analytics */
+.analytics-section .location-item {
+  transition: background 0.15s, border-color 0.15s;
+}
+.analytics-section .location-item:hover {
+  background: #fff;
+  border-color: rgba(14, 165, 233, 0.3);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Dark mode — Analytics chips & estimate */
+.dark-mode .sim-chip {
+  color: #fcd34d;
+  background: rgba(146, 64, 14, 0.25);
+  border-color: rgba(252, 211, 77, 0.3);
+}
+.dark-mode .estimate-chip {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.15);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+.dark-mode .metric-estimate {
+  color: #e2e8f0;
+}
+.dark-mode .analytics-section .rank-4,
+.dark-mode .analytics-section .rank-5 {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
 /* ===== DATA TABLE ===== */
+/* Tabel data: wadah dengan tinggi maksimal 600px dan scroll vertikal. Header tabel bersifat sticky. */
 .data-table-wrapper {
   max-height: 600px;
   overflow-y: auto;
@@ -862,6 +1080,7 @@
   background: rgba(240, 249, 255, 0.8);
 }
 
+/* Badge status pada sel tabel. */
 .status-badge {
   padding: 0.3rem 0.7rem;
   border-radius: 6px;
@@ -871,18 +1090,21 @@
 }
 
 /* ===== MAP SECTION ===== */
+/* Wadah peta: mengisi sisa ruang dan menjadi acuan posisi overlay absolut. */
 .map-section {
   flex: 1;
   position: relative;
   background: #e0f2fe;
 }
 
+/* Kontainer Leaflet: ukuran penuh dengan latar biru muda sebagai warna dasar peta. */
 .leaflet-container {
   width: 100%;
   height: 100%;
   background: #f0f9ff;
 }
 
+/* Overlay peta di pojok kanan atas (z-index 1000) untuk kartu informasi. */
 .map-overlay {
   position: absolute;
   top: 1rem;
@@ -893,30 +1115,7 @@
   gap: 0.8rem;
 }
 
-.map-minimize-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(14, 165, 233, 0.2);
-  color: #0369a1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
-  backdrop-filter: blur(14px);
-  margin-left: auto;
-}
-
-.map-minimize-btn:hover {
-  background: rgba(224, 242, 254, 0.95);
-  border-color: #0284c7;
-  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.2);
-  transform: translateY(-2px);
-}
-
+/* Kartu terakhir di dalam overlay diberi gaya kaca dan bayangan. */
 .map-overlay > div:last-child {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
@@ -927,6 +1126,7 @@
   min-width: 190px;
 }
 
+/* Kartu info kecil dengan latar hampir opak dan bayangan. */
 .info-box {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -953,6 +1153,7 @@
 }
 
 /* ===== CUSTOM MARKERS ===== */
+/* Marker kustom berbentuk lingkaran dengan efek denyut dan badge jumlah. */
 .custom-marker-wrapper {
   position: relative;
   display: flex;
@@ -969,6 +1170,7 @@
   animation: pulse-ring 2s ease-out infinite;
 }
 
+/* Animasi denyut untuk marker lingkaran, dipakai oleh .marker-pulse. */
 @keyframes pulse-ring {
   0% {
     transform: scale(0.5);
@@ -1030,6 +1232,7 @@
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Badge jumlah pada titik sederhana. Latar mewarisi warna induk. */
 .simple-marker-badge {
   position: absolute;
   top: -5px;
@@ -1072,6 +1275,7 @@
   animation: pulse-ring-modern 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Animasi denyut versi modern dengan durasi 3 detik dan tiga keyframe. */
 @keyframes pulse-ring-modern {
   0% {
     transform: scale(0);
@@ -1111,6 +1315,7 @@
   transform: translateY(-2px);
 }
 
+/* Ikon emoji di dalam marker modern. */
 .marker-emoji {
   display: flex;
   align-items: center;
@@ -1119,6 +1324,7 @@
   filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.08));
 }
 
+/* Badge jumlah pada marker modern. */
 .marker-count-modern {
   position: absolute;
   top: -8px;
@@ -1140,75 +1346,122 @@
 }
 
 /* ===== CUSTOM POPUP ===== */
+/* Isi popup peta: judul, subjudul berhuruf kapital, dan baris statistik berformat label dan nilai. */
 .custom-popup {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .popup-content {
-  padding: 0.5rem;
+  padding: 2px;
 }
 
 .popup-content h4 {
   color: #0c4a6e;
-  font-size: 1rem;
-  margin-bottom: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.01em;
+}
+
+.popup-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.popup-subtitle {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #eef2f7;
 }
 
 .popup-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.8rem;
+  gap: 0.3rem;
+  margin: 0;
 }
 
 .popup-stat {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.4rem;
-  background: rgba(240, 249, 255, 0.8);
-  border-radius: 6px;
+  gap: 0.75rem;
+}
+
+.popup-content .popup-stat p {
+  margin: 0;
 }
 
 .popup-label {
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   color: #64748b;
   font-weight: 500;
 }
 
 .popup-value {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #0c4a6e;
+  color: #0f172a;
 }
 
+/* Badge keparahan di dalam popup: merah untuk tinggi, kuning untuk sedang, hijau untuk rendah. */
 .severity-badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-align: center;
-  width: 100%;
-  display: block;
+  display: inline-block;
 }
 
 .severity-badge.high {
-  background: linear-gradient(135deg, #2563EB, #1E3A8A);
-  color: #fff;
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .severity-badge.medium {
-  background: linear-gradient(135deg, #ea580c, #c2410c);
-  color: #fff;
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .severity-badge.low {
-  background: linear-gradient(135deg, #059669, #047857);
-  color: #fff;
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Leaflet popup container — compact, professional */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.14);
+  border: 1px solid #e5e7eb;
+}
+
+.leaflet-popup-content {
+  margin: 11px 12px;
+  line-height: 1.4;
+}
+
+.leaflet-popup-close-button {
+  width: 22px;
+  height: 22px;
+  font-size: 18px;
+  padding: 2px 0 0 0;
+  color: #94a3b8;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #334155;
 }
 
 /* ===== SPATIAL ANALYSIS SECTION ===== */
+/* Tab analisis spasial: kartu alat analisis dengan slider dan tombol, serta hasil ringkasan, tabel, dan daftar prioritas. */
 .spatial-section {
   padding: 1rem;
 }
@@ -1268,6 +1521,7 @@
   gap: 1rem;
 }
 
+/* Slider parameter analisis. Gradien trek bernilai tetap di 50 persen. */
 .slider {
   flex: 1;
   height: 6px;
@@ -1312,33 +1566,28 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  background: #0284c7;
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.15s ease;
   font-size: 0.9rem;
 }
 
 .btn-analyze:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
-}
-
-.btn-analyze:active {
-  transform: translateY(0);
+  background: #0369a1;
 }
 
 /* Analysis Results */
+/* Wadah hasil analisis dan daftar prioritas. */
 .analysis-results, .priority-results {
-  background: rgba(255, 255, 255, 0.95);
+  background: #fff;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   margin-top: 1.5rem;
-  border: 2px solid #1f2937;
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);
+  border: 1px solid #e2e8f0;
 }
 
 .analysis-results h4, .priority-results h4 {
@@ -1351,6 +1600,7 @@
   margin-top: 1rem;
 }
 
+/* Grid kartu ringkasan hasil analisis. */
 .result-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1359,11 +1609,11 @@
 }
 
 .summary-card {
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  background: #f8fafc;
   padding: 1rem;
   border-radius: 8px;
   text-align: center;
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  border: 1px solid #e2e8f0;
 }
 
 .summary-label {
@@ -1375,7 +1625,7 @@
 
 .summary-value {
   display: block;
-  font-size: 1.8rem;
+  font-size: 1.45rem;
   font-weight: 700;
   color: #0c4a6e;
 }
@@ -1384,6 +1634,7 @@
   color: #dc2626;
 }
 
+/* Tabel hasil analisis dengan scroll horizontal. */
 .results-table {
   overflow-x: auto;
   margin-top: 1rem;
@@ -1392,29 +1643,40 @@
 .results-table table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .results-table thead {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
-  color: white;
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 .results-table th {
-  padding: 0.75rem;
+  padding: 0.5rem 0.6rem;
   text-align: left;
   font-weight: 600;
 }
 
 .results-table td {
-  padding: 0.75rem;
+  padding: 0.5rem 0.6rem;
   border-bottom: 1px solid #e2e8f0;
+}
+
+/* First column = area name: allow wrapping. Other (numeric/status) columns: keep compact */
+.results-table td:first-child,
+.results-table th:first-child {
+  overflow-wrap: anywhere;
+}
+.results-table td:not(:first-child),
+.results-table th:not(:first-child) {
+  white-space: nowrap;
 }
 
 .results-table tr:hover {
   background: rgba(14, 165, 233, 0.05);
 }
 
+/* Badge cakupan dan skor dengan varian good, medium, dan poor. */
 .coverage-badge, .score-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -1448,37 +1710,62 @@
 
 .priority-item {
   display: grid;
-  grid-template-columns: 35px 1fr 90px;
-  align-items: flex-end;
-  gap: 1.2rem;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
   background: #ffffff;
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .priority-item:hover {
   background: #f8fafc;
 }
 
-.priority-item.priority-1 {
-  
+/* Aksen garis kiri untuk prioritas 1 sampai 3: emas, perak, dan perunggu. */
+.priority-results .priority-item.priority-1,
+.priority-results .priority-item.priority-2,
+.priority-results .priority-item.priority-3 {
+  border-left-width: 3px;
+  border-left-style: solid;
+}
+.priority-results .priority-item.priority-1 .priority-rank,
+.priority-results .priority-item.priority-2 .priority-rank,
+.priority-results .priority-item.priority-3 .priority-rank {
+  border-radius: 6px;
+  padding: 0.15rem 0;
 }
 
-.priority-item.priority-2 {
-  
+.priority-results .priority-item.priority-1 {
+  border-left-color: #d4a017;
+}
+.priority-results .priority-item.priority-1 .priority-rank {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.priority-item.priority-3 {
-  
+.priority-results .priority-item.priority-2 {
+  border-left-color: #94a3b8;
+}
+.priority-results .priority-item.priority-2 .priority-rank {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.priority-results .priority-item.priority-3 {
+  border-left-color: #b45309;
+}
+.priority-results .priority-item.priority-3 .priority-rank {
+  background: #fde8d7;
+  color: #9a3412;
 }
 
 .priority-rank {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #0c4a6e;
-  min-width: 40px;
   text-align: center;
 }
 
@@ -1489,8 +1776,10 @@
 
 .priority-info h5 {
   color: #0c4a6e;
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .priority-details {
@@ -1504,24 +1793,27 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
 .score-text {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #475569;
+  white-space: nowrap;
 }
 
 .score-text strong {
   color: #0c4a6e;
 }
 
+/* Badge tingkat prioritas: urgent merah, high oranye, medium kuning. */
 .priority-level {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .priority-level.urgent {
@@ -1539,16 +1831,17 @@
   color: #92400e;
 }
 
+/* Kotak rekomendasi di bawah hasil analisis. */
 .recommendation-box {
-  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1.5rem;
   margin-top: 1.5rem;
 }
 
 .recommendation-box h5 {
-  color: #000000;
+  color: #0f172a;
   margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
@@ -1556,15 +1849,15 @@
 }
 
 .recommendation-box p {
-  color: #000000;
-  font-size: 0.875rem  ;
+  color: #334155;
+  font-size: 0.875rem;
   line-height: 1.6;
   margin-bottom: 0.75rem;
 }
 
 .recommendation-box ul {
   margin-left: 1.5rem;
-  color: #000000;
+  color: #334155;
   font-size: 0.875rem;
   line-height: 1.8;
 }
@@ -1574,6 +1867,7 @@
 }
 
 /* ===== DARK MODE ===== */
+/* Override tema gelap lewat kelas .dark-mode. Beberapa aturan ditulis ulang di bagian bawah blok ini dan menimpa aturan grup di atasnya. */
 .app-container.dark-mode {
   background: #0f172a;
   color: #e2e8f0;
@@ -1593,17 +1887,22 @@
   background: #0f172a;
 }
 
-.dark-mode .tab-btn {
+.dark-mode .header-nav-btn {
   color: #cbd5e1;
 }
 
-.dark-mode .tab-btn:hover {
+.dark-mode .header-nav-btn:hover {
   background: rgba(148, 163, 184, 0.1);
+  color: #38bdf8;
 }
 
-.dark-mode .tab-btn.active {
+.dark-mode .header-nav-btn.active {
   background: rgba(14, 165, 233, 0.15);
   color: #38bdf8;
+}
+
+.dark-mode .header-nav-btn.active::after {
+  background: #38bdf8;
 }
 
 .dark-mode .glass-effect,
@@ -1642,9 +1941,27 @@
   color: #cbd5e1;
 }
 
-.dark-mode .stat-label,
+.dark-mode .stat-label {
+  color: #cbd5e1;
+}
+
 .dark-mode .stat-change {
   color: #94a3b8;
+}
+
+/* Overview KPI cards — solid dark surface + readable number */
+.dark-mode .stat-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark-mode .stat-card:hover {
+  background: #243244;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.dark-mode .stat-value {
+  color: #f1f5f9;
 }
 
 .dark-mode .filter-select,
@@ -1729,6 +2046,38 @@
   background: rgba(14, 165, 233, 0.25);
 }
 
+/* Spatial — summary cards & results table (dark) */
+.dark-mode .summary-card {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: #334155;
+}
+.dark-mode .summary-value {
+  color: #f1f5f9;
+}
+.dark-mode .results-table thead {
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+}
+.dark-mode .results-table td {
+  border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+.dark-mode .results-table tr:hover {
+  background: rgba(51, 65, 85, 0.4);
+}
+/* Priority rank accents stay readable in dark */
+.dark-mode .priority-results .priority-item.priority-1 .priority-rank {
+  background: rgba(212, 160, 23, 0.25);
+  color: #fcd34d;
+}
+.dark-mode .priority-results .priority-item.priority-2 .priority-rank {
+  background: rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+}
+.dark-mode .priority-results .priority-item.priority-3 .priority-rank {
+  background: rgba(180, 83, 9, 0.25);
+  color: #fdba74;
+}
+
 .dark-mode .logo-text h1 {
   color: #38bdf8;
 }
@@ -1753,7 +2102,112 @@
   color: #f1f5f9;
 }
 
+/* ===== DARK MODE — BASEMAP TILES =====
+   The same valid OpenStreetMap tiles are re-tinted to a dark cartographic
+   look via CSS filter. This avoids CARTO's dark_all endpoint, which now
+   requires an API key and returns a watermarked placeholder tile. */
+.basemap-dark-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+
+/* ===== DARK MODE — LEAFLET POPUP & MAP CONTROLS ===== */
+.dark-mode .leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.dark-mode .leaflet-popup-tip {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.dark-mode .custom-popup .popup-content h4,
+.dark-mode .custom-popup .popup-title {
+  color: #f1f5f9;
+}
+
+.dark-mode .custom-popup .popup-subtitle {
+  color: #94a3b8;
+  border-bottom-color: #334155;
+}
+
+.dark-mode .custom-popup .popup-label {
+  color: #94a3b8;
+}
+
+.dark-mode .custom-popup .popup-value {
+  color: #e2e8f0;
+}
+
+.dark-mode .custom-popup .popup-content p,
+.dark-mode .custom-popup .popup-content span,
+.dark-mode .custom-popup .popup-content b,
+.dark-mode .custom-popup .popup-content strong {
+  color: #cbd5e1;
+}
+
+.dark-mode .leaflet-popup-close-button {
+  color: #94a3b8;
+}
+
+.dark-mode .leaflet-popup-close-button:hover {
+  color: #e2e8f0;
+}
+
+/* Zoom + Geoman toolbar buttons */
+.dark-mode .leaflet-bar a,
+.dark-mode .leaflet-bar a:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-bottom-color: #334155;
+}
+
+.dark-mode .leaflet-bar a:hover {
+  background: #243244;
+}
+
+.dark-mode .leaflet-bar {
+  border: 1px solid #334155;
+}
+
+/* Attribution control */
+.dark-mode .leaflet-control-attribution {
+  background: rgba(30, 41, 59, 0.85);
+  color: #94a3b8;
+}
+
+.dark-mode .leaflet-control-attribution a {
+  color: #38bdf8;
+}
+
+/* Leaflet tooltip */
+.dark-mode .leaflet-tooltip {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+
 /* ===== RESPONSIVE ===== */
+/* Breakpoint disusun dari lebar besar ke kecil: 1280px (laptop), 1024px (tablet), 768px (mobile dan tablet kecil), dan 480px (ponsel). Aturan di blok yang lebih kecil menimpa blok sebelumnya bila selector sama, karena urutan di file. */
+/* Laptop: give header nav room by shrinking search + tightening gaps */
+@media (max-width: 1280px) {
+  .header-content {
+    gap: 1rem;
+  }
+  .header-left {
+    gap: 0.9rem;
+  }
+  .search-box {
+    max-width: 240px;
+  }
+  .header-nav-btn {
+    padding: 0.55rem 0.6rem;
+  }
+}
+
+/* Breakpoint 1024px: sidebar dipersempit menjadi 320px dan kartu statistik menjadi satu kolom. */
 @media (max-width: 1024px) {
   .sidebar {
     width: 320px;
@@ -1764,6 +2218,7 @@
   }
 }
 
+/* Breakpoint 768px (mobile dan tablet kecil): header disusun ulang ke arah kolom, navigasi tab diganti bottom nav, sidebar menjadi drawer dengan backdrop, dan overlay info peta disembunyikan. */
 @media (max-width: 768px) {
   .header {
     padding: 0.65rem 1rem;
@@ -1773,6 +2228,12 @@
     flex-direction: column;
     align-items: stretch;
     gap: 0.75rem;
+  }
+
+  /* Header nav hidden on mobile — mobile-bottom-nav takes over */
+  /* Navigasi tab di header disembunyikan pada layar 768px ke bawah. */
+  .header-nav {
+    display: none;
   }
 
   .header-left,
@@ -1786,16 +2247,37 @@
   }
 
   .header-right {
-    justify-content: space-between;
     gap: 0.5rem;
     flex-wrap: wrap;
+    align-items: center;
   }
-  
+
+  /* Search takes its own full-width row; control buttons sit on the row above */
+  /* Pada layar 768px, kotak pencarian menempati baris penuh di bawah tombol kanan. */
   .search-box {
     order: 3;
+    flex: 1 1 100%;
+    width: 100%;
     max-width: 100%;
+    margin-top: 0.1rem;
+  }
+
+  .header-right .icon-btn,
+  .header-right .menu-btn {
+    order: 2;
+    flex: 0 0 auto;
+  }
+
+  .header-right .icon-btn {
+    margin-left: auto;
+  }
+
+  .header-right .icon-btn + .icon-btn,
+  .header-right .menu-btn {
+    margin-left: 0;
   }
   
+  /* Sidebar sebagai drawer: posisi fixed dari sisi kiri, lebar min(88vw, 340px), tampil di atas peta (z-index 500). */
   .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
@@ -1803,6 +2285,62 @@
     width: min(88vw, 340px);
     z-index: 500;
     box-shadow: 8px 0 32px rgba(14, 165, 233, 0.18);
+  }
+
+  /* Drawer header with close button (mobile) */
+  .sidebar-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .sidebar-mobile-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0c4a6e;
+  }
+
+  /* Tombol tutup (X) pada header drawer, ukuran 40 x 40 piksel. */
+  .sidebar-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #334155;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .sidebar-close-btn:hover {
+    background: #eef2f7;
+    border-color: rgba(2, 132, 199, 0.35);
+  }
+
+  .dark-mode .sidebar-mobile-header {
+    background: rgba(15, 23, 42, 0.98);
+    border-bottom-color: rgba(148, 163, 184, 0.2);
+  }
+
+  .dark-mode .sidebar-mobile-title {
+    color: #f1f5f9;
+  }
+
+  .dark-mode .sidebar-close-btn {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #cbd5e1;
   }
 
   .sidebar-backdrop {
@@ -1814,6 +2352,7 @@
     z-index: 490;
   }
   
+  /* Drawer tertutup digeser keluar ke kiri. */
   .sidebar.closed {
     transform: translateX(-100%);
   }
@@ -1827,15 +2366,115 @@
     height: 100dvh;
   }
 
-  .sidebar {
-    width: 280px;
-  }
-
   .main-content {
     padding: 0;
+    overflow-y: auto;
+    padding-bottom: 86px; /* room for fixed bottom nav */
   }
 
+  /* Bottom navigation shown across the whole mobile/tablet range (<=768) */
   .mobile-bottom-nav {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 260;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.35rem;
+    padding: 0.45rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(14, 165, 233, 0.15);
+    box-shadow: 0 12px 32px rgba(14, 165, 233, 0.18);
+    backdrop-filter: blur(16px);
+  }
+
+  /* Tombol satu item pada bottom nav: ikon di atas teks dengan tinggi minimum 48px. */
+  .mobile-bottom-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 48px;
+    padding: 0.4rem 0.2rem;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.64rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .mobile-bottom-nav-btn svg {
+    flex-shrink: 0;
+  }
+
+  .mobile-bottom-nav-btn.active {
+    background: linear-gradient(135deg, rgba(14,165,233,0.16), rgba(2,132,199,0.16));
+    color: #0369a1;
+  }
+
+  .dark-mode .mobile-bottom-nav {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  .dark-mode .mobile-bottom-nav-btn {
+    color: #cbd5e1;
+  }
+
+  .dark-mode .mobile-bottom-nav-btn.active {
+    background: rgba(14, 165, 233, 0.2);
+    color: #38bdf8;
+  }
+
+  /* Risk legend overlay lifted above the fixed bottom nav (<=768) */
+  /* Selector ini mencocokkan teks style inline tanpa spasi. Browser biasanya menormalkan style inline dengan spasi, sehingga selector ini berpotensi tidak cocok. Belum diverifikasi di browser. */
+  [style*="position:fixed"][style*="bottom:20px"][style*="right:20px"] {
+    bottom: 92px !important;
+    z-index: 255 !important;
+  }
+
+  /* Map info overlay hidden on mobile/tablet — same stats are in the Overview tab.
+     This avoids the panel covering the map, drawer, and attribution. */
+  .map-overlay {
+    display: none;
+  }
+
+  /* Leaflet attribution — compact, pinned to the very bottom-right corner of the map.
+     (No upward offset: lifting it placed it in the middle of the visible map strip.) */
+  .leaflet-bottom {
+    bottom: 0;
+  }
+
+  .leaflet-control-attribution {
+    font-size: 8px;
+    line-height: 1.25;
+    max-width: 58vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .leaflet-control-attribution a {
+    text-decoration: none;
+  }
+
+  .dark-mode .leaflet-control-attribution {
+    background: rgba(15, 23, 42, 0.8);
+  }
+
+  /* When the drawer is open on mobile, hide the Leaflet attribution so it
+     doesn't show over/beside the panel. It reappears when the drawer closes
+     (OSM attribution stays visible during normal map use). */
+  .app-container.sidebar-open .leaflet-control-attribution {
     display: none;
   }
 
@@ -1888,8 +2527,8 @@
   }
 
   .priority-item {
-    grid-template-columns: 30px 1fr 80px;
-    gap: 0.8rem;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 0.6rem;
     padding: 0.8rem;
   }
 
@@ -1968,14 +2607,13 @@
 
   .search-box {
     width: 100%;
-    padding: 0.5rem 0.8rem;
-    font-size: 0.85rem;
-    display: none;
+    max-width: 100%;
+    padding: 0;
   }
 
   .search-box input {
-    font-size: 0.85rem;
-    padding: 0.4rem;
+    font-size: 16px; /* prevent iOS zoom-on-focus */
+    padding: 0.55rem 0.8rem 0.55rem 2.5rem; /* keep room for the search icon */
   }
 
   .sidebar {
@@ -1994,48 +2632,9 @@
     z-index: 230;
   }
 
-  .mobile-bottom-nav {
-    position: fixed;
-    left: 0.75rem;
-    right: 0.75rem;
-    bottom: 0.75rem;
-    z-index: 260;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.35rem;
-    padding: 0.45rem;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(14, 165, 233, 0.15);
-    box-shadow: 0 12px 32px rgba(14, 165, 233, 0.18);
-    backdrop-filter: blur(16px);
-  }
-
+  /* bottom-nav base styles inherited from <=768 block; tighten font for very small screens */
   .mobile-bottom-nav-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
-    min-height: 54px;
-    padding: 0.4rem 0.2rem;
-    border: none;
-    border-radius: 12px;
-    background: transparent;
-    color: #64748b;
-    font-size: 0.62rem;
-    font-weight: 700;
-    line-height: 1;
-    text-align: center;
-  }
-
-  .mobile-bottom-nav-btn svg {
-    flex-shrink: 0;
-  }
-
-  .mobile-bottom-nav-btn.active {
-    background: linear-gradient(135deg, rgba(14,165,233,0.16), rgba(2,132,199,0.16));
-    color: #0369a1;
+    font-size: 0.6rem;
   }
 
   .stat-cards {
@@ -2104,8 +2703,8 @@
   }
 
   .priority-item {
-    grid-template-columns: 25px 1fr 70px;
-    gap: 0.6rem;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 0.5rem;
     padding: 0.6rem;
     border-radius: 8px;
   }
@@ -2167,17 +2766,11 @@
     padding: 0.5rem;
   }
 
-  /* Chart Responsiveness */
-  .recharts-wrapper {
-    width: 100% !important;
-    height: auto !important;
-  }
-
-  .recharts-surface {
-    width: 100% !important;
-  }
+  /* Chart sizing is handled by ResponsiveContainer (width/height/aspect).
+     Do not override .recharts-wrapper height here, it collapses the SVG. */
 
   /* Buttons */
+  /* Target sentuh minimum (44px) untuk tombol pada layar 480px ke bawah. */
   .btn, .icon-btn {
     min-height: 44px;
     min-width: 44px;
@@ -2274,26 +2867,26 @@
     font-size: 0.85rem;
   }
 
-  /* Map Overlays - Mobile Optimizations */
+  /* Map info overlay hidden on phones (stats available in Overview tab) */
   .map-overlay {
-    top: 8px;
-    left: 8px;
-    right: auto;
-    z-index: 1000;
+    display: none;
   }
 
-  /* Risk legend on mobile */
+  /* Risk legend on mobile — lifted above the fixed bottom nav so it isn't covered */
+  /* Override !important untuk legenda risiko pada layar 480px. Selector sama dengan blok 768px, lihat catatan di sana. */
   [style*="position:fixed"][style*="bottom:20px"][style*="right:20px"] {
     position: fixed !important;
-    bottom: 10px !important;
+    bottom: 92px !important;
     right: 10px !important;
     left: auto !important;
     max-width: 220px !important;
     padding: 0.75rem 0.9rem !important;
     font-size: 0.75rem !important;
+    z-index: 255 !important;
   }
 
   /* Dark Mode Mobile */
+  /* Override tema gelap untuk layar 480px ke bawah, menimpa sebagian warna dari blok dark mode utama. */
   .dark-mode .app-container {
     background: #0f172a;
   }
@@ -2312,10 +2905,12 @@
   }
 
   /* Hide Leaflet controls on mobile */
+  /* Menyembunyikan kontrol di pojok kiri atas peta pada layar 480px ke bawah, termasuk tombol zoom dan toolbar Geoman. */
   .leaflet-control-container .leaflet-top.leaflet-left {
     display: none;
   }
 
+  /* Selector ini tidak dipakai di komponen JSX. Leaflet memakai kelas .leaflet-control-attribution, sehingga aturan ini kemungkinan tidak berlaku. */
   .leaflet-attribution-control {
     display: none;
   }
@@ -2335,6 +2930,7 @@
   }
 }
 
+/* Animasi masuk: elemen naik 8px sambil memudar. */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }

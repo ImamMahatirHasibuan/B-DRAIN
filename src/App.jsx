@@ -1,14 +1,31 @@
+/**
+ * App.jsx: komponen landing page Geodashboard Bekasi (B-DRAIN).
+ *
+ * Landing page ini menampilkan hero, bagian Tentang Project, Fitur Unggulan,
+ * bagian Dataset & Teknologi, footer, dan modal unduh dataset.
+ * Perpindahan tampilan dilakukan lewat state showMap (tanpa React Router):
+ * jika showMap bernilai true, komponen MapDashboard dirender menggantikan landing page.
+ */
+
+// React dan hook useState untuk state lokal (showMap, showDatasetModal, currentPhotoIndex).
+// Catatan: default import React tidak dipakai secara eksplisit di kode ini (tidak dihapus).
 import React, { useState } from 'react';
-import { Activity, Database, TrendingUp, ArrowRight, Github, Mail, Droplet } from 'lucide-react';
+// Ikon dari lucide-react. Activity, TrendingUp, dan Droplet tidak dipakai di JSX (tidak dihapus).
+import { Activity, Database, TrendingUp, ArrowRight, Github, Mail, Droplet, Check } from 'lucide-react';
+// Komponen dashboard peta; ditampilkan menggantikan landing page saat showMap bernilai true.
 import MapDashboard from './MapDashboard';
+// Stylesheet khusus landing page.
 import './App.css';
+// Ikon dan gambar dari src/assets. Seluruh ikon di blok ini dipakai pada JSX, kecuali shoppingIcon.
 import mapIcon from './assets/map.png';
 import analysisIcon from './assets/analysis.png';
 import emergencyIcon from './assets/emergency.png';
 import barChartIcon from './assets/bar-chart.png';
 import databaseIcon from './assets/database.png';
 import clipboardIcon from './assets/clipboard.png';
+// Tidak dipakai di JSX (tidak dihapus).
 import shoppingIcon from './assets/shopping.png';
+// Foto dokumentasi untuk grid pada kartu Dokumentasi di hero (foto1 sampai foto7).
 import foto1 from './assets/foto1.jpg';
 import foto2 from './assets/foto2.jpg';
 import foto3 from './assets/foto3.jpg';
@@ -16,21 +33,33 @@ import foto4 from './assets/foto4.jpg';
 import foto5 from './assets/foto5.jpg';
 import foto6 from './assets/foto6.jpg';
 import foto7 from './assets/foto7.jpg';
+// Ikon kecil untuk judul kartu Dokumentasi.
 import photoPng from './assets/photo.png';
 
+/**
+ * Komponen utama landing page.
+ * Mengelola state tampilan, daftar dataset untuk modal unduh, dan aksi unduh file.
+ */
 function App() {
+  // showMap: menampilkan MapDashboard saat true.
+  // showDatasetModal: membuka modal Download Dataset saat true.
+  // currentPhotoIndex: tidak dibaca di JSX dan setter-nya tidak pernah dipanggil di kode ini (tidak dihapus).
   const [showMap, setShowMap] = useState(false);
   const [showDatasetModal, setShowDatasetModal] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   
+  // Sumber foto untuk grid dokumentasi; jumlahnya ditampilkan sebagai Total Foto.
   const photos = [foto1, foto2, foto3, foto4, foto5, foto6, foto7];
   
+  // Dataset utama yang dapat diunduh dari modal. Path mengacu ke folder public/data.
   const datasets = [
     { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: 'Titik rawan banjir historis 30 kecamatan',          path: '/data/data_banjir.geojson' },
     { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Sungai Utama / infrastruktur air (OpenStreetMap)',   path: '/data/export.geojson' },
     { name: 'sebaran-rumah-sakit-jawa-barat.geojson',             type: 'GeoJSON', desc: 'Sebaran fasilitas kesehatan Jawa Barat',            path: '/data/sebaran-rumah-sakit-jawa-barat.geojson' },
   ];
 
+  // Layer Topografi BIG 1:25.000 dikelompokkan per group (warna dipakai sebagai aksen judul grup).
+  // Path mengacu ke public/data/geojson_kota_bekasi.
   const topoDatasets = [
     { group: 'Topografi', color: '#b45309', items: [
       { name: 'KONTUR_LN_25K.geojson',     desc: 'Garis kontur elevasi',        path: '/data/geojson_kota_bekasi/KONTUR_LN_25K.geojson' },
@@ -80,6 +109,7 @@ function App() {
     ]},
   ];
 
+  // Memicu unduhan file: membuat elemen <a> sementara dengan atribut download, lalu meng-klik dan melepasnya dari DOM.
   const handleDownload = (filePath, fileName) => {
     const link = document.createElement('a');
     link.href = filePath;
@@ -89,14 +119,16 @@ function App() {
     document.body.removeChild(link);
   };
 
+  // Jika showMap aktif, tampilkan dashboard peta; onBack mengembalikan tampilan ke landing page.
   if (showMap) {
     return <MapDashboard onBack={() => setShowMap(false)} />;
   }
 
   return (
     <div className="landing-page">
-      {/* Hero Section */}
+      {/* Hero Section: bagian pembuka berisi judul, deskripsi, tombol aksi, statistik, dan kartu dokumentasi. */}
       <section className="hero-section">
+        {/* Navbar tetap di bagian atas (fixed). Tautan #about, #features, dan #data menuju section di bawah. */}
         <nav className="navbar">
           <div className="nav-brand">
             <img src="/logo.png" alt="Geodashboard Bekasi" className="brand-logo" style={{width: '100px', height: '100px', objectFit: 'contain'}} />
@@ -134,6 +166,7 @@ function App() {
                 View Dataset
               </button>
             </div>
+            {/* Statistik ringkas hero. Angkanya ditulis statis di JSX, bukan dihitung dari data. */}
             <div className="hero-stats">
               <div className="stat-item">
                 <div className="stat-number">12</div>
@@ -149,6 +182,7 @@ function App() {
               </div>
             </div>
           </div>
+          {/* Kartu visual kanan: grid foto dokumentasi dari array photos dan jumlah total foto. */}
           <div className="hero-visual">
             <div className="visual-card">
               <div className="card-header">
@@ -176,7 +210,7 @@ function App() {
         </div>
       </section>
 
-      {/* About Section */}
+      {/* About Section: penjelasan singkat project dan empat kartu ringkasan (visualisasi, analisis, prioritas, analitik). */}
       <section id="about" className="about-section">
         <div className="section-container">
           <div className="section-header">
@@ -209,7 +243,7 @@ function App() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section: kartu fitur unggulan. Diagram batang pada kartu besar (chart-mockup) adalah ilustrasi statis, bukan grafik data. */}
       <section id="features" className="features-section">
         <div className="section-container">
           <div className="section-header">
@@ -232,9 +266,9 @@ function App() {
                 <h3>Spatial Analysis Tools</h3>
                 <p>Fitur analisis spasial untuk identifikasi korelasi titik banjir dengan Sungai Utama</p>
                 <ul>
-                  <li>✓ Buffer Analysis</li>
-                  <li>✓ Proximity Analysis</li>
-                  <li>✓ Priority Area Identification</li>
+                  <li style={{display:'flex',alignItems:'center',gap:'.4rem'}}><Check size={15} /> Buffer Analysis</li>
+                  <li style={{display:'flex',alignItems:'center',gap:'.4rem'}}><Check size={15} /> Proximity Analysis</li>
+                  <li style={{display:'flex',alignItems:'center',gap:'.4rem'}}><Check size={15} /> Priority Area Identification</li>
                 </ul>
               </div>
             </div>
@@ -257,7 +291,7 @@ function App() {
         </div>
       </section>
 
-      {/* Data Section */}
+      {/* Data Section: deskripsi dataset, daftar teknologi, dan tombol menuju dashboard. Kotak di sisi kanan berisi contoh CSV statis. */}
       <section id="data" className="data-section">
         <div className="section-container">
           <div className="data-content">
@@ -293,7 +327,7 @@ function App() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer: identitas project, informasi mahasiswa, ikon tautan, dan keterangan hak cipta. */}
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-brand">
@@ -328,7 +362,7 @@ function App() {
         </div>
       </footer>
 
-      {/* Dataset Modal */}
+      {/* Dataset Modal: tampil saat showDatasetModal bernilai true. Klik overlay atau tombol × untuk menutup. */}
       {showDatasetModal && (
         <div className="modal-overlay" onClick={() => setShowDatasetModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -339,7 +373,7 @@ function App() {
             <div className="modal-body">
               <p style={{marginBottom: '1.5rem', color: '#64748b'}}>Pilih dataset yang ingin Anda download:</p>
 
-              {/* Dataset Utama */}
+              {/* Dataset Utama: item dirender dari array datasets. */}
               <div style={{marginBottom: '1.5rem'}}>
                 <h3 style={{fontSize: '0.85rem', fontWeight: '700', color: '#0c4a6e', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem'}}>
                   <Database size={14}/> Dataset Utama
@@ -362,7 +396,7 @@ function App() {
                 </div>
               </div>
 
-              {/* Topografi BIG */}
+              {/* Topografi BIG 1:25.000: layer dirender dari array topoDatasets, dikelompokkan per group. */}
               <div>
                 <h3 style={{fontSize: '0.85rem', fontWeight: '700', color: '#0c4a6e', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem'}}>
                   <Database size={14}/> Topografi BIG 1:25.000
