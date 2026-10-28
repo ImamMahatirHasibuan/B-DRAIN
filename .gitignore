@@ -28,3 +28,16 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+
+# Environment files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Python virtual environment
+ml/.venv/
+.venv/
+venv/
+
+# Local temporary extraction output
+.tmp_docx_extract/unzipped/

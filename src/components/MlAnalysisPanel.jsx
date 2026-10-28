@@ -1,12 +1,90 @@
 import React from 'react';
 import { AlertCircle, Download, Droplets, MapPin, RefreshCw, XCircle } from 'lucide-react';
 
-const riskColor = (cls) => (cls === 'tinggi' ? '#dc2626' : cls === 'sedang' ? '#d97706' : '#16a34a');
-const riskBg = (cls) => (cls === 'tinggi' ? '#fef2f2' : cls === 'sedang' ? '#fffbeb' : '#f0fdf4');
-const riskBorder = (cls) => (cls === 'tinggi' ? '#fecaca' : cls === 'sedang' ? '#fde68a' : '#bbf7d0');
+/**
+ * Mengembalikan warna teks untuk kelas risiko.
+ * Kelas yang tidak dikenali (termasuk undefined) jatuh ke gaya "rendah".
+ * @param {string} cls Kelas risiko: 'tinggi', 'sedang', atau 'rendah'.
+ * @param {boolean} [dark=false] Memilih palet mode gelap.
+ * @returns {string} Nilai warna CSS.
+ */
+const riskColor = (cls, dark = false) =>
+  cls === 'tinggi' ? (dark ? '#f87171' : '#dc2626')
+  : cls === 'sedang' ? (dark ? '#fbbf24' : '#d97706')
+  : (dark ? '#4ade80' : '#16a34a');
+/**
+ * Mengembalikan warna latar kartu risiko.
+ * Mode terang memakai warna pastel solid, mode gelap memakai warna transparan.
+ * @param {string} cls Kelas risiko.
+ * @param {boolean} [dark=false] Memilih palet mode gelap.
+ * @returns {string} Nilai warna latar CSS.
+ */
+const riskBg = (cls, dark = false) =>
+  dark
+    ? (cls === 'tinggi' ? 'rgba(220,38,38,0.18)' : cls === 'sedang' ? 'rgba(217,119,6,0.18)' : 'rgba(22,163,74,0.18)')
+    : (cls === 'tinggi' ? '#fef2f2' : cls === 'sedang' ? '#fffbeb' : '#f0fdf4');
+/**
+ * Mengembalikan warna garis tepi kartu risiko.
+ * @param {string} cls Kelas risiko.
+ * @param {boolean} [dark=false] Memilih palet mode gelap.
+ * @returns {string} Nilai warna border CSS.
+ */
+const riskBorder = (cls, dark = false) =>
+  dark
+    ? (cls === 'tinggi' ? 'rgba(248,113,113,0.4)' : cls === 'sedang' ? 'rgba(251,191,36,0.4)' : 'rgba(74,222,128,0.4)')
+    : (cls === 'tinggi' ? '#fecaca' : cls === 'sedang' ? '#fde68a' : '#bbf7d0');
+/**
+ * Mengubah kode kelas risiko menjadi label teks Indonesia.
+ * Kelas selain 'tinggi' dan 'sedang' ditampilkan sebagai 'Rendah'.
+ * @param {string} cls Kelas risiko.
+ * @returns {string} Label kelas risiko.
+ */
 const riskLabel = (cls) => (cls === 'tinggi' ? 'Tinggi' : cls === 'sedang' ? 'Sedang' : 'Rendah');
 
+/**
+ * Panel "Analisis Risiko Banjir" pada sidebar dashboard.
+ *
+ * Tujuan: menilai tingkat risiko banjir untuk satu titik yang dipilih di peta,
+ * dan menjalankan prediksi batch untuk sekumpulan area banjir.
+ *
+ * Alur analisis tunggal:
+ * 1. Pengguna mengaktifkan mode pilih (mlPickMode) lalu mengklik peta, sehingga mlPickedPoint terisi.
+ * 2. Pengguna mengatur ketinggian (mlForm.elev_mean) dan frekuensi banjir (mlForm.severity_score: 1 Jarang, 2 Kadang, 3 Sering).
+ * 3. Tombol "Analisis Risiko" memanggil onAnalyzeSingle. Komponen induk (MapDashboard.jsx) mengirim permintaan POST ke /api/predict.
+ * 4. Saat mlStatus bernilai 'done', kartu hasil menampilkan kelas, skor, probabilitas, RS terdekat, estimasi surut, dan saran evakuasi dari mlResult dan mlDerived.
+ *
+ * Alur batch:
+ * Pengguna memilih cakupan (mlBatchScope) lalu menekan "Run Batch" yang memanggil onAnalyzeBatch.
+ * Komponen induk mengirim permintaan ke /api/predict/batch. Hasil difilter dengan mlBatchRiskFilter
+ * dan diurutkan dengan mlBatchSortBy. Ringkasan (mlBatchSummary) dan tabel memakai sortedBatchResults.
+ *
+ * Fallback saat API tidak tersedia:
+ * - Indikator "Tersambung" atau "Offline" bergantung pada mlModelInfo, yaitu hasil cek /api/health.
+ * - Jika mlStatus bernilai 'no-api', panel menampilkan petunjuk menjalankan ml/api.py dan tombol onAnalyzeSingleOffline.
+ *   Tombol ini memakai estimasi offline (buildOfflineRiskEstimate) yang diberi label "Demo".
+ *   Hasil estimasi tersebut bukan keluaran model ML.
+ * - Batch tidak memiliki fallback offline. Saat mlBatchStatus bernilai 'no-api', hanya pesan peringatan yang ditampilkan.
+ * - Chip "Data Simulasi" pada judul menyatakan bahwa data panel masih bersifat simulasi, sesuai atribut title pada chip.
+ *
+ * Props penting:
+ * - darkMode (boolean, default false): memilih palet tema. Nilainya membentuk token t dan
+ *   warna kartu risiko melalui helper riskColor, riskBg, dan riskBorder.
+ * - t (objek warna, bukan prop): token turunan dari darkMode yang berisi cardBg, secBg, border,
+ *   text, textSec, muted, dan accent. Dipakai untuk kartu, teks, dan aksen.
+ * - mlModelInfo: hasil /api/health. Nilai null berarti server belum terhubung.
+ * - mlPickMode, onTogglePickMode, mlPickedPoint ({ lat, lng }), onClearPickedPoint: pengaturan titik lokasi.
+ * - mlForm, onMlFormChange: input ketinggian (elev_mean) dan frekuensi banjir (severity_score).
+ * - mlStatus: status analisis tunggal ('idle', 'loading', 'done', 'error', 'no-api').
+ * - onAnalyzeSingle, onAnalyzeSingleOffline: pemicu analisis online dan estimasi offline.
+ * - mlResult, mlDerived: hasil prediksi dan turunannya ({ hospital, duration, advice }).
+ * - mlBatchScope, onMlBatchScopeChange: cakupan batch ('filtered' atau 'all').
+ * - mlBatchStatus, onAnalyzeBatch: status dan pemicu batch ('idle', 'loading', 'done', 'error', 'no-api').
+ * - mlBatchRiskFilter, mlBatchSortBy, mlBatchSummary, sortedBatchResults: filter, urutan, ringkasan, dan data tabel batch.
+ * - filteredFloodPointsLength, floodPointsLength: jumlah area untuk label opsi cakupan batch.
+ * - onExportBatchResultsCsv, onExportBatchSummary: pemicu ekspor hasil batch.
+ */
 export default function MlAnalysisPanel({
+  darkMode = false,
   mlModelInfo,
   mlPickMode,
   onTogglePickMode,
@@ -34,23 +112,30 @@ export default function MlAnalysisPanel({
   onExportBatchResultsCsv,
   onExportBatchSummary,
 }) {
+  // Token warna tema. Gaya tetap inline, namun mengikuti mode terang atau gelap sesuai darkMode.
+  const t = darkMode
+    ? { cardBg: '#1e293b', secBg: '#0f172a', border: '#334155', text: '#f1f5f9', textSec: '#cbd5e1', muted: '#94a3b8', accent: '#38bdf8' }
+    : { cardBg: '#ffffff', secBg: '#f8fafc', border: '#e2e8f0', text: '#0f172a', textSec: '#475569', muted: '#94a3b8', accent: '#0284c7' };
+
+  // Gaya dasar untuk input angka (ketinggian lokasi).
   const inp = {
     width: '100%',
     padding: '.45rem .6rem',
     borderRadius: '8px',
-    border: '1px solid #e2e8f0',
+    border: `1px solid ${t.border}`,
     fontSize: '.82rem',
-    color: '#1e3a5f',
-    background: 'white',
+    color: t.text,
+    background: t.cardBg,
     boxSizing: 'border-box',
     outline: 'none',
     transition: 'border-color .15s',
   };
 
+  // Gaya dasar untuk label field formulir.
   const lbl = {
     fontSize: '.72rem',
     fontWeight: '600',
-    color: '#64748b',
+    color: t.textSec,
     display: 'block',
     marginBottom: '.3rem',
     letterSpacing: '.02em',
@@ -61,8 +146,8 @@ export default function MlAnalysisPanel({
     <div style={{display:'flex', flexDirection:'column', gap:0}}>
       <div style={{padding:'1rem 1rem .75rem', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
         <div>
-          <div style={{fontWeight:'700', fontSize:'.95rem', color:'#0f172a', display:'flex', alignItems:'center', gap:'.5rem',paddingBottom:'.35rem',flexWrap:'wrap'}}>Analisis Risiko Banjir <span style={{display:'inline-block',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></div>
-          <div style={{fontSize:'.72rem', color:'#94a3b8', marginTop:'.15rem'}}>Masukkan data lokasi untuk mendapat penilaian risiko</div>
+          <div style={{fontWeight:'700', fontSize:'.95rem', color: t.text, display:'flex', alignItems:'center', gap:'.5rem',paddingBottom:'.35rem',flexWrap:'wrap'}}>Analisis Risiko Banjir <span className="sim-chip" title="Data bersifat simulasi, menunggu integrasi data">Data Simulasi</span></div>
+          <div style={{fontSize:'.72rem', color: t.muted, marginTop:'.15rem'}}>Masukkan data lokasi untuk mendapat penilaian risiko</div>
         </div>
         <span style={{
           display:'inline-flex', alignItems:'center', gap:'.3rem',
@@ -89,10 +174,9 @@ export default function MlAnalysisPanel({
               width:'100%', padding:'.55rem .75rem', borderRadius:'9px', fontSize:'.8rem',
               fontWeight:'600', cursor:'pointer', transition:'all .18s',
               display:'flex', alignItems:'center', justifyContent:'center', gap:'.45rem',
-              border: mlPickMode ? '1.5px solid #0ea5e9' : '1.5px dashed #cbd5e1',
-              background: mlPickMode ? '#f0f9ff' : '#fafafa',
-              color: mlPickMode ? '#0369a1' : '#64748b',
-              boxShadow: mlPickMode ? '0 0 0 3px rgba(14,165,233,.1)' : 'none',
+              border: mlPickMode ? `1.5px solid ${t.accent}` : `1.5px dashed ${t.border}`,
+              background: mlPickMode ? (darkMode ? 'rgba(56,189,248,0.12)' : '#f0f9ff') : (darkMode ? t.secBg : '#fafafa'),
+              color: mlPickMode ? t.accent : t.textSec,
             }}
           >
             <MapPin size={14} style={{flexShrink:0}}/>
@@ -168,12 +252,9 @@ export default function MlAnalysisPanel({
             width:'100%', padding:'.62rem', borderRadius:'10px', border:'none', fontSize:'.85rem',
             fontWeight:'700', cursor: (!mlPickedPoint||mlStatus==='loading') ? 'not-allowed' : 'pointer',
             display:'flex', alignItems:'center', justifyContent:'center', gap:'.5rem',
-            transition:'all .2s', letterSpacing:'.01em',
-            background: (!mlPickedPoint||mlStatus==='loading')
-              ? '#e2e8f0'
-              : 'linear-gradient(135deg,#0284c7 0%,#0369a1 100%)',
+            transition:'background .15s', letterSpacing:'.01em',
+            background: (!mlPickedPoint||mlStatus==='loading') ? '#e2e8f0' : '#0284c7',
             color: (!mlPickedPoint||mlStatus==='loading') ? '#94a3b8' : 'white',
-            boxShadow: (!mlPickedPoint||mlStatus==='loading') ? 'none' : '0 4px 14px rgba(2,132,199,.3)',
           }}
         >
           {mlStatus === 'loading'
@@ -216,26 +297,26 @@ export default function MlAnalysisPanel({
           const cls = mlResult.predicted_class;
           return (
             <div style={{display:'flex', flexDirection:'column', gap:'.65rem', animation:'slideUp .25s ease'}}>
-              <div style={{borderRadius:'12px', overflow:'hidden', border:`1px solid ${riskBorder(cls)}`}}>
-                <div style={{padding:'.65rem 1rem', background: riskBg(cls), display:'flex', alignItems:'center', gap:'.75rem'}}>
+              <div style={{borderRadius:'12px', overflow:'hidden', border:`1px solid ${riskBorder(cls, darkMode)}`}}>
+                <div style={{padding:'.65rem 1rem', background: riskBg(cls, darkMode), display:'flex', alignItems:'center', gap:'.75rem'}}>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:'.68rem', fontWeight:'700', color:'#64748b', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'.15rem'}}>Tingkat Risiko</div>
-                    <div style={{fontSize:'1.5rem', fontWeight:'900', color: riskColor(cls), lineHeight:1}}>{riskLabel(cls)}</div>
+                    <div style={{fontSize:'.68rem', fontWeight:'700', color: t.textSec, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'.15rem'}}>Tingkat Risiko</div>
+                    <div style={{fontSize:'1.5rem', fontWeight:'700', color: riskColor(cls, darkMode), lineHeight:1}}>{riskLabel(cls)}</div>
                   </div>
-                  <div style={{textAlign:'center', padding:'.4rem .7rem', background:'white', borderRadius:'9px', border:`1px solid ${riskBorder(cls)}`}}>
-                    <div style={{fontSize:'1.35rem', fontWeight:'900', color: riskColor(cls), lineHeight:1}}>{mlResult.risk_score}</div>
-                    <div style={{fontSize:'.62rem', color:'#94a3b8', fontWeight:'600'}}>/ 100</div>
+                  <div style={{textAlign:'center', padding:'.4rem .7rem', background: t.cardBg, borderRadius:'9px', border:`1px solid ${riskBorder(cls, darkMode)}`}}>
+                    <div style={{fontSize:'1.4rem', fontWeight:'700', color: riskColor(cls, darkMode), lineHeight:1}}>{mlResult.risk_score}</div>
+                    <div style={{fontSize:'.72rem', color: t.muted, fontWeight:'600'}}>/ 100</div>
                   </div>
                 </div>
-                <div style={{padding:'.65rem 1rem', background:'white', borderTop:`1px solid ${riskBorder(cls)}`}}>
-                  <div style={{fontSize:'.68rem', fontWeight:'700', color:'#94a3b8', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'.45rem'}}>Probabilitas</div>
+                <div style={{padding:'.65rem 1rem', background: t.cardBg, borderTop:`1px solid ${riskBorder(cls, darkMode)}`}}>
+                  <div style={{fontSize:'.68rem', fontWeight:'700', color: t.muted, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'.45rem'}}>Probabilitas</div>
                   {Object.entries(mlResult.probabilities || {}).map(([riskClass, probability]) => (
                     <div key={riskClass} style={{display:'flex', alignItems:'center', gap:'.5rem', marginBottom:'.3rem'}}>
-                      <span style={{width:'44px', fontSize:'.7rem', color:'#64748b', textTransform:'capitalize', flexShrink:0}}>{riskClass}</span>
-                      <div style={{flex:1, height:'5px', background:'#f1f5f9', borderRadius:'99px', overflow:'hidden'}}>
-                        <div style={{height:'100%', width:`${(probability*100).toFixed(0)}%`, background: riskColor(riskClass), borderRadius:'99px', transition:'width .6s ease'}}/>
+                      <span style={{width:'44px', fontSize:'.7rem', color: t.textSec, textTransform:'capitalize', flexShrink:0}}>{riskClass}</span>
+                      <div style={{flex:1, height:'5px', background: darkMode ? '#334155' : '#f1f5f9', borderRadius:'99px', overflow:'hidden'}}>
+                        <div style={{height:'100%', width:`${(probability*100).toFixed(0)}%`, background: riskColor(riskClass, darkMode), borderRadius:'99px', transition:'width .6s ease'}}/>
                       </div>
-                      <span style={{width:'36px', fontSize:'.7rem', fontWeight:'700', color: riskColor(riskClass), textAlign:'right', flexShrink:0}}>{(probability*100).toFixed(1)}%</span>
+                      <span style={{width:'36px', fontSize:'.7rem', fontWeight:'700', color: riskColor(riskClass, darkMode), textAlign:'right', flexShrink:0}}>{(probability*100).toFixed(1)}%</span>
                     </div>
                   ))}
                 </div>
@@ -243,24 +324,24 @@ export default function MlAnalysisPanel({
 
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.5rem'}}>
                 {mlDerived.hospital && (
-                  <div style={{padding:'.6rem .65rem', background:'white', borderRadius:'10px', border:'1px solid #e2e8f0', boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>
-                    <div style={{fontSize:'.65rem', fontWeight:'700', color:'#94a3b8', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'.3rem'}}>RS Terdekat</div>
-                    <div style={{fontSize:'.76rem', fontWeight:'700', color:'#0f172a', marginBottom:'.15rem', lineHeight:'1.3'}}>{mlDerived.hospital.name}</div>
-                    <div style={{fontSize:'.75rem', fontWeight:'800', color:'#0284c7'}}>{mlDerived.hospital.dist.toFixed(2)} km</div>
+                  <div style={{padding:'.6rem .65rem', background: t.cardBg, borderRadius:'10px', border:`1px solid ${t.border}`, minWidth:0}}>
+                    <div style={{fontSize:'.65rem', fontWeight:'700', color: t.muted, textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'.3rem'}}>RS Terdekat</div>
+                    <div style={{fontSize:'.76rem', fontWeight:'700', color: t.text, marginBottom:'.15rem', lineHeight:'1.3', overflowWrap:'anywhere'}}>{mlDerived.hospital.name}</div>
+                    <div style={{fontSize:'.75rem', fontWeight:'700', color: t.accent}}>{mlDerived.hospital.dist.toFixed(2)} km</div>
                   </div>
                 )}
-                <div style={{padding:'.6rem .65rem', background:'white', borderRadius:'10px', border:'1px solid #e2e8f0', boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>
-                  <div style={{fontSize:'.65rem', fontWeight:'700', color:'#94a3b8', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'.3rem'}}>Estimasi Surut</div>
-                  <div style={{fontSize:'.75rem', fontWeight:'700', color:'#0f172a', lineHeight:'1.35'}}>{mlDerived.duration}</div>
+                <div style={{padding:'.6rem .65rem', background: t.cardBg, borderRadius:'10px', border:`1px solid ${t.border}`, minWidth:0}}>
+                  <div style={{fontSize:'.65rem', fontWeight:'700', color: t.muted, textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'.3rem'}}>Estimasi Surut</div>
+                  <div style={{fontSize:'.75rem', fontWeight:'700', color: t.text, lineHeight:'1.35'}}>{mlDerived.duration}</div>
                 </div>
               </div>
 
-              <div style={{padding:'.65rem .75rem', borderRadius:'10px', background: riskBg(cls), border:`1px solid ${riskBorder(cls)}`}}>
-                <div style={{fontSize:'.7rem', fontWeight:'800', color: riskColor(cls), marginBottom:'.3rem', letterSpacing:'.02em'}}>{mlDerived.advice.urgency}</div>
-                <div style={{fontSize:'.74rem', color:'#374151', lineHeight:'1.5'}}>{mlDerived.advice.text}</div>
+              <div style={{padding:'.65rem .75rem', borderRadius:'10px', background: riskBg(cls, darkMode), border:`1px solid ${riskBorder(cls, darkMode)}`}}>
+                <div style={{fontSize:'.72rem', fontWeight:'700', color: riskColor(cls, darkMode), marginBottom:'.3rem', letterSpacing:'.02em'}}>{mlDerived.advice.urgency}</div>
+                <div style={{fontSize:'.74rem', color: t.textSec, lineHeight:'1.5'}}>{mlDerived.advice.text}</div>
               </div>
 
-              <div style={{fontSize:'.64rem', color:'#cbd5e1', textAlign:'center'}}>
+              <div style={{fontSize:'.64rem', color: t.muted, textAlign:'center'}}>
                 {mlPickedPoint?.lat.toFixed(5)}, {mlPickedPoint?.lng.toFixed(5)}
               </div>
             </div>
@@ -297,7 +378,7 @@ export default function MlAnalysisPanel({
                 padding:'.48rem .75rem',
                 borderRadius:'8px',
                 border:'none',
-                background: mlBatchStatus === 'loading' ? '#e2e8f0' : 'linear-gradient(135deg,#0ea5e9 0%,#0284c7 100%)',
+                background: mlBatchStatus === 'loading' ? '#e2e8f0' : '#0284c7',
                 color: mlBatchStatus === 'loading' ? '#94a3b8' : '#fff',
                 fontSize:'.76rem',
                 fontWeight:'700',

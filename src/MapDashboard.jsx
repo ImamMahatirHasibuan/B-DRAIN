@@ -3,6 +3,10 @@
 // dengan Data Real & UI Modern
 // ========================================
 
+// Komponen utama dashboard peta banjir Kota Bekasi.
+// Menampilkan peta Leaflet, sidebar tab (Overview, Layers, Analytics, Spatial, Risiko),
+// data GeoJSON dari folder public/data, serta integrasi API prediksi ML.
+
 import React, { useState, useEffect } from 'react';
 import { 
   MapContainer, TileLayer, GeoJSON, Marker, Popup, 
@@ -20,6 +24,7 @@ import {
   Legend,
   XAxis,
   YAxis,
+  LabelList,
   RadarChart,
   Radar,
   PolarGrid,
@@ -38,8 +43,10 @@ import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import L from 'leaflet';
 import './MapDashboard.css';
+// Panel sidebar: MlAnalysisPanel untuk tab Risiko (ML), SpatialAnalysisPanel untuk tab Analytics dan Spatial.
 import MlAnalysisPanel from './components/MlAnalysisPanel';
 import SpatialAnalysisPanel from './components/SpatialAnalysisPanel';
+// Aset gambar yang dipakai pada header, panel, dan popup.
 import logoBDrain from './assets/Logo B-DRAIN.png';
 import mapIcon from './assets/map.png';
 import emergencyIcon from './assets/emergency.png';
@@ -51,6 +58,7 @@ import analysisIcon from './assets/analysis.png';
 import barChartIcon from './assets/bar-chart.png';
 import satelliteDishIcon from './assets/satellite-dish.png';
 import {
+  // Utilitas risiko ML: payload request, estimasi offline, durasi genangan, saran evakuasi, dan rumah sakit terdekat.
   buildOfflineRiskEstimate,
   buildMlPayload,
   classColor,
@@ -60,6 +68,7 @@ import {
   severityToScore,
 } from './utils/mlRiskUtils';
 import {
+  // Fungsi pembentuk isi file ekspor CSV dan TXT untuk hasil prioritas dan batch ML.
   buildBatchResultsCsv,
   buildBatchSummaryText,
   buildPriorityAreasCsv,
@@ -67,7 +76,7 @@ import {
   getTimestampString,
 } from './utils/reportExportUtils';
 
-// Fix Leaflet marker icons
+// Memperbaiki ikon marker default Leaflet yang tidak termuat karena path bawaan bundler; URL diarahkan ke CDN Leaflet 1.7.1.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -75,11 +84,14 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Palet warna untuk slice pie dan batang grafik kecamatan, diambil berdasarkan indeks data.
 const COLORS = ['#991b1b', '#c2410c', '#065f46', '#1e40af', '#6b21a8', '#9f1239'];
 
 // ========================================
 // TOPO LAYERS CONFIG (geojson_kota_bekasi/)
 // ========================================
+// Daftar layer topografi BIG 1:25.000 (30 layer, 8 grup).
+// key adalah nama file GeoJSON, type menentukan gaya render: LN (garis), AR (area), PT (titik).
 const TOPO_LAYERS = [
   // ── Topografi
   { key: 'KONTUR_LN_25K',              label: 'Garis Kontur',         group: 'Topografi',     type: 'LN', color: '#b45309', weight: 1, dashArray: '4 2' },
@@ -121,11 +133,18 @@ const TOPO_LAYERS = [
   { key: 'DEPOMINYAK_PT_25K',         label: 'Depo Minyak',          group: 'Utilitas',      type: 'PT', color: '#9a3412' },
 ];
 
+// Daftar grup unik layer topografi, urut sesuai kemunculan pertama di TOPO_LAYERS.
 const TOPO_GROUPS = [...new Set(TOPO_LAYERS.map(l => l.group))];
 
 // ========================================
 // GEOMAN CONTROL COMPONENT
 // ========================================
+/**
+ * Mengaktifkan kontrol gambar dan edit Leaflet-Geoman pada peta.
+ * Kontrol ditambahkan sekali saat peta pertama kali tersedia.
+ *
+ * @returns {null} Komponen ini tidak merender elemen DOM sendiri.
+ */
 const GeomanControl = () => {
   const map = useMap();
   
@@ -155,6 +174,15 @@ const GeomanControl = () => {
 // ========================================
 // MAP CLICK HANDLER (for AI location picker)
 // ========================================
+/**
+ * Menangkap klik pada peta untuk memilih lokasi analisis ML.
+ * Klik hanya diteruskan saat mode pilih titik aktif.
+ *
+ * @param {Object} props
+ * @param {boolean} props.active Apakah mode pilih titik sedang aktif.
+ * @param {(latlng: L.LatLng) => void} props.onPick Callback dengan koordinat yang diklik.
+ * @returns {null} Komponen ini tidak merender elemen DOM sendiri.
+ */
 const MapClickHandler = ({ active, onPick }) => {
   useMapEvents({
     click: (e) => {
@@ -167,73 +195,62 @@ const MapClickHandler = ({ active, onPick }) => {
 // ========================================
 // MODERN MARKER FACTORY
 // ========================================
-const createMarkerIcon = (severity, count) => {
-  const palette = {
-    high:   { bg: '#2563EB', glow: 'rgba(37,99,235,0.35)',   ring: 'rgba(37,99,235,0.18)' },
-    medium: { bg: '#f59e0b', glow: 'rgba(245,158,11,0.35)',  ring: 'rgba(245,158,11,0.18)' },
-    low:    { bg: '#10b981', glow: 'rgba(16,185,129,0.35)',  ring: 'rgba(16,185,129,0.18)' },
-  };
+// Warna marker titik banjir berdasarkan tingkat keparahan (high, medium, low).
+const RISK_COLORS = {
+  high:   '#DC2626',
+  medium: '#F59E0B',
+  low:    '#16A34A',
+};
 
-  const p = palette[severity] || palette.low;
-  const coreSize = severity === 'high' ? 13 : severity === 'medium' ? 11 : 9;
-  const totalSize = coreSize + 20; // room for ring
+/**
+ * Membuat ikon divIcon Leaflet berbentuk lingkaran untuk titik banjir.
+ * Ukuran dan cincin luar dibuat lebih besar saat titik sedang dipilih.
+ *
+ * @param {string} severity Tingkat keparahan: 'high', 'medium', atau 'low'. Nilai lain memakai warna 'low'.
+ * @param {boolean} [selected=false] Apakah titik sedang dipilih.
+ * @returns {L.DivIcon} Ikon untuk dipakai pada Marker.
+ */
+const createMarkerIcon = (severity, selected = false) => {
+  const bg = RISK_COLORS[severity] || RISK_COLORS.low;
+  // Lingkaran solid dengan border putih; ukuran lebih besar dan cincin ditambahkan saat dipilih
+  const radius = selected ? 11 : 7;
+  const size = radius * 2;
+  const border = selected ? 2.5 : 1.5;
+  const total = size + border * 2 + (selected ? 6 : 0);
 
   return L.divIcon({
     html: `
       <div style="
-        position:relative;
-        width:${totalSize}px;
-        height:${totalSize}px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
+        width:${total}px;height:${total}px;
+        display:flex;align-items:center;justify-content:center;
       ">
-        <!-- outer pulse ring -->
         <span style="
-          position:absolute;
-          inset:0;
-          border-radius:50%;
-          background:${p.ring};
-          border:1.5px solid ${p.bg}44;
-          animation:bdrain-pulse 2.4s ease-out infinite;
+          width:${size}px;height:${size}px;border-radius:50%;
+          background:${bg};
+          border:${border}px solid #fff;
+          box-shadow:0 1px 3px rgba(0,0,0,.35)${selected ? `, 0 0 0 3px ${bg}55` : ''};
+          box-sizing:content-box;
         "></span>
-        <!-- core dot -->
-        <span style="
-          position:relative;
-          width:${coreSize}px;
-          height:${coreSize}px;
-          border-radius:50%;
-          background:${p.bg};
-          box-shadow:0 0 0 2px #fff, 0 2px 10px ${p.glow};
-          transition:transform .2s;
-          z-index:2;
-        "></span>
-        ${count > 1 ? `
-        <span style="
-          position:absolute;
-          top:-5px;
-          right:-5px;
-          background:${p.bg};
-          color:#fff;
-          border-radius:999px;
-          padding:0 6px;
-          font-size:10px;
-          line-height:1.35;
-          transform:translate(25%,-25%);
-          box-shadow:0 1px 3px rgba(0,0,0,.2);
-        ">${count}</span>
-        ` : ''}
       </div>
     `,
     className: 'bdrain-marker',
-    iconSize: [totalSize, totalSize],
-    iconAnchor: [totalSize / 2, totalSize / 2],
+    iconSize: [total, total],
+    iconAnchor: [total / 2, total / 2],
   });
 };
 
 // ========================================
 // DATA PROCESSING
 // ========================================
+/**
+ * Komponen dashboard utama. Memuat data GeoJSON, mengelola state layer peta
+ * dan filter, menjalankan analisis spasial (buffer, jarak, prioritas), serta
+ * mengirim permintaan prediksi risiko ke API ML.
+ *
+ * @param {Object} props
+ * @param {() => void} props.onBack Callback untuk kembali ke halaman sebelumnya.
+ * @returns {JSX.Element} Tampilan loading saat data dimuat, lalu layout dashboard lengkap.
+ */
 const MapDashboard = ({ onBack }) => {
   const [floodData, setFloodData] = useState([]);
   const [floodPoints, setFloodPoints] = useState([]);
@@ -241,9 +258,17 @@ const MapDashboard = ({ onBack }) => {
   const [floodRiskData, setFloodRiskData] = useState(null);
   const [hospitalData, setHospitalData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  // Mode gelap dibaca dari localStorage saat inisialisasi; default terang bila storage tidak dapat diakses.
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('bdrain-theme') === 'dark';
+    } catch {
+      return false;
+    }
+  });
   const [fullscreen, setFullscreen] = useState(false);
 
+  // Status tampil setiap layer di peta. Hanya titik rawan banjir yang aktif saat awal.
   const [activeLayers, setActiveLayers] = useState({
     floodPoints: true,
     drainage: false,
@@ -259,25 +284,30 @@ const MapDashboard = ({ onBack }) => {
   const [priorityAreas, setPriorityAreas] = useState([]);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  // Sidebar terbuka otomatis pada layar lebar (> 768px) dan tertutup pada layar kecil.
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedPoint, setSelectedPoint] = useState(null);
+  // Pusat awal peta, koordinat sekitar Kota Bekasi. Setter-nya belum dipakai di file ini.
   const [mapCenter, setMapCenter] = useState([-6.2642, 106.9869]);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
-  const [isMinimized, setIsMinimized] = useState(false);
+  // Cache GeoJSON layer topografi yang sudah dimuat, dengan key berupa nama layer.
   const [topoLayerData, setTopoLayerData] = useState({});
   const [activeTopoLayers, setActiveTopoLayers] = useState({
-    // show kelurahan boundaries by default
+    // Batas desa/kelurahan ditampilkan secara default
     'ADMINISTRASIDESA_AR_25K': true,
     'ADMINISTRASI_LN_25K': false,
   });
   const [adminView, setAdminView] = useState('kelurahan');
   const [topoGroupOpen, setTopoGroupOpen] = useState({});
 
+  // Input tambahan untuk model ML (elev_mean, severity_score). Nilai ini digabung dengan koordinat titik oleh buildMlPayload.
+  // Input tambahan untuk model ML (elev_mean, severity_score). Nilai ini diteruskan ke buildMlPayload bersama koordinat.
   const [mlForm, setMlForm] = useState({
     elev_mean: 12,
     severity_score: 2,
   });
+  // Saat mode pilih titik aktif, klik peta akan menentukan lokasi untuk analisis ML tunggal.
   const [mlPickMode, setMlPickMode] = useState(false);
   const [mlPickedPoint, setMlPickedPoint] = useState(null);
   const [mlResult, setMlResult] = useState(null);
@@ -285,6 +315,7 @@ const MapDashboard = ({ onBack }) => {
   const [showMlLayer, setShowMlLayer] = useState(true);
   const [mlModelInfo, setMlModelInfo] = useState(null);
   const [mlDerived, setMlDerived] = useState(null);
+  // Cakupan batch ML: 'all' memakai seluruh titik banjir, selain itu hanya titik yang lolos filter pencarian dan keparahan.
   const [mlBatchScope, setMlBatchScope] = useState('all');
   const [mlBatchStatus, setMlBatchStatus] = useState('idle');
   const [mlBatchResults, setMlBatchResults] = useState([]);
@@ -292,9 +323,17 @@ const MapDashboard = ({ onBack }) => {
   const [mlBatchRiskFilter, setMlBatchRiskFilter] = useState('all');
   const [mlBatchSortBy, setMlBatchSortBy] = useState('risk_score');
 
+  /**
+   * Memuat GeoJSON satu layer topografi dari public/data/geojson_kota_bekasi.
+   * Hasil disimpan ke state topoLayerData agar tidak diambil ulang.
+   *
+   * @param {string} key Nama layer, sama dengan key di TOPO_LAYERS.
+   * @returns {Promise<Object>} Objek GeoJSON layer tersebut.
+   * @throws {Error} Jika file tidak ditemukan atau tidak valid di kedua lokasi.
+   */
   const   fetchTopoLayerData = async (key) => {
     if (topoLayerData[key]) return topoLayerData[key];
-    // try primary location first; if it fails to parse as JSON, try fallback
+    // Coba lokasi utama dulu; bila gagal, coba lokasi cadangan di subfolder
     const primaryPath = `/data/geojson_kota_bekasi/${key}.geojson`;
     const fallbackPath = `/data/geojson_kota_bekasi/geojson_kota_bekasi/${key}.geojson`;
 
@@ -302,10 +341,10 @@ const MapDashboard = ({ onBack }) => {
       try {
         const res = await fetch(path);
         if (!res.ok) return null;
-        // attempt to parse JSON; if parsing fails we'll treat as null
+        // Parse JSON; jika parsing gagal, dianggap null
         try {
           const json = await res.json();
-          // basic validation: must be an object with features or type
+          // Validasi dasar: harus objek dengan properti type atau features
           if (json && (json.type || json.features)) return json;
           return null;
         } catch (err) {
@@ -336,6 +375,13 @@ const MapDashboard = ({ onBack }) => {
       }
     };
 
+    /**
+     * Mengubah fitur Point GeoJSON titik banjir menjadi objek datar yang dipakai dashboard.
+     * Fitur tanpa koordinat numerik valid akan dibuang.
+     *
+     * @param {Object|null} geoJson Data GeoJSON titik banjir.
+     * @returns {Array<{id: (string|number), lat: number, lng: number, kecamatan: string, nama_kecamatan: string, jumlah_titik: number, severity: string, tahun: (string|number|null)}>}
+     */
     const normalizeFloodPoints = (geoJson) => {
       const features = geoJson?.features || [];
       return features
@@ -351,7 +397,7 @@ const MapDashboard = ({ onBack }) => {
                 lng,
                 kecamatan: properties.kecamatan || properties.bps_nama_kecamatan || properties.nama_kecamatan || '-',
                 nama_kecamatan: properties.nama_kecamatan || properties.bps_nama_kecamatan || properties.kecamatan || '-',
-                // Support multiple possible property names coming from different generators
+                // Mendukung beberapa nama properti yang berbeda dari berbagai sumber data
                 jumlah_titik: Number(properties.jumlah_titik ?? properties.jumlah_titik_banjir ?? properties.jumlah_titik_banjar ?? 0),
                 severity: properties.severity || properties.severity_historis || 'low',
                 tahun: properties.tahun || null,
@@ -360,6 +406,7 @@ const MapDashboard = ({ onBack }) => {
         .filter(Boolean);
     };
 
+    // Memuat data dasar secara paralel. Fetch yang gagal menghasilkan null sehingga dashboard tetap tampil.
     const loadDashboardData = async () => {
       const [floodGeoJson, hospitalGeoJson, drainageGeoJson, delineasiGeoJson] = await Promise.all([
         safeFetchJson('/data/data_banjir.geojson'),
@@ -373,7 +420,7 @@ const MapDashboard = ({ onBack }) => {
       const points = normalizeFloodPoints(floodGeoJson);
       setFloodData(points);
       setFloodPoints(points);
-      // prefer delineasi/genangan polygon file if available
+      // Gunakan file poligon delineasi/genangan jika tersedia
       setFloodRiskData(delineasiGeoJson || null);
       setHospitalData(hospitalGeoJson);
       setDrainageData(drainageGeoJson);
@@ -388,6 +435,7 @@ const MapDashboard = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
+    // Memuat otomatis layer topografi yang aktif tetapi belum ada di cache
     const activeKeys = TOPO_LAYERS
       .map(layer => layer.key)
       .filter(key => activeTopoLayers[key] && !topoLayerData[key]);
@@ -399,6 +447,20 @@ const MapDashboard = ({ onBack }) => {
     });
   }, [activeTopoLayers, topoLayerData]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('bdrain-theme', darkMode ? 'dark' : 'light');
+    } catch {
+      /* localStorage unavailable (private mode / SSR) — persistence skipped */
+    }
+  }, [darkMode]);
+
+  /**
+   * Mengganti tampilan batas administrasi antara level kelurahan dan kecamatan.
+   * Hanya salah satu dari dua layer batas yang aktif pada satu waktu.
+   *
+   * @param {'kelurahan'|'kecamatan'} view Level administrasi yang dipilih.
+   */
   const setAdminViewHandler = (view) => {
     setAdminView(view);
     setActiveTopoLayers(prev => ({
@@ -408,6 +470,11 @@ const MapDashboard = ({ onBack }) => {
     }));
   };
 
+  /**
+   * Menjumlahkan jumlah titik banjir per kecamatan, diurutkan dari terbanyak.
+   *
+   * @returns {Array<{name: string, value: number}>} Maksimal 6 kecamatan teratas.
+   */
   const getKecamatanData = () => {
     const map = {};
     floodData.forEach(item => {
@@ -417,14 +484,21 @@ const MapDashboard = ({ onBack }) => {
     return Object.values(map).sort((a, b) => b.value - a.value).slice(0, 6);
   };
 
+  // fullMark 30 adalah skala tetap untuk grafik radar, bukan nilai maksimum data
   const getRadarData = () => getKecamatanData().map(item => ({ subject: item.name, A: item.value, fullMark: 30 }));
 
+  /**
+   * Menghitung ringkasan statistik untuk kartu Overview dan overlay peta.
+   *
+   * @returns {{total: number, avgPerKecamatan: (string|number), highRisk: number, totalKecamatan: number, totalRecords: number, yearRange: string, maxFloodPoints: number}}
+   */
   const getTotalStats = () => {
     const total = floodData.reduce((s, i) => s + i.jumlah_titik, 0);
     const uniqueKec = new Set(floodData.map(i => i.kecamatan));
     const totalKecamatan = uniqueKec.size;
     const avgPerKecamatan = totalKecamatan > 0 ? (total / totalKecamatan).toFixed(1) : 0;
     const highRisk = floodPoints.filter(p => p.severity === 'high').length;
+    // Tahun data ditulis tetap (hardcoded), tidak dibaca dari properti data
     const yearRange = '2020';
     const maxFloodPoints = floodData.length ? Math.max(...floodData.map(i => i.jumlah_titik)) : 30;
     return { total, avgPerKecamatan, highRisk, totalKecamatan, totalRecords: floodData.length, yearRange, maxFloodPoints };
@@ -433,6 +507,15 @@ const MapDashboard = ({ onBack }) => {
   // ========================================
   // SPATIAL ANALYSIS
   // ========================================
+  /**
+   * Menghitung jarak antara dua koordinat memakai rumus haversine dengan jari-jari bumi 6371 km.
+   *
+   * @param {number} lat1 Lintang titik pertama (derajat).
+   * @param {number} lon1 Bujur titik pertama (derajat).
+   * @param {number} lat2 Lintang titik kedua (derajat).
+   * @param {number} lon2 Bujur titik kedua (derajat).
+   * @returns {number} Jarak dalam meter.
+   */
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
@@ -441,13 +524,19 @@ const MapDashboard = ({ onBack }) => {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   };
 
+  /**
+   * Analisis buffer: untuk setiap titik banjir, menghitung berapa sungai utama
+   * berada dalam radius bufferRadius dan menandai titik sebagai "Terlayani" atau
+   * "Tidak Terlayani". Titik high-risk tanpa sungai dalam buffer masuk daftar prioritas.
+   * Hasil disimpan ke analysisResults dan priorityAreas.
+   */
   const performBufferAnalysis = () => {
     if (!drainageData || floodPoints.length === 0) { alert('Data belum tersedia'); return; }
     const results = floodPoints.map(point => {
       let drainageCount = 0, nearestDrainage = null, minDist = Infinity;
       drainageData.features?.forEach(f => {
         if (f.geometry.type === 'LineString') {
-          // Check ALL coordinates in the LineString, not just the first one
+          // Periksa seluruh koordinat LineString, bukan hanya titik pertama
           let minDistToLine = Infinity;
           f.geometry.coordinates.forEach(([lng, lat]) => {
             const dist = calculateDistance(point.lat, point.lng, lat, lng);
@@ -456,10 +545,10 @@ const MapDashboard = ({ onBack }) => {
             }
           });
           
-          // Count this drainage if ANY point is within buffer radius
+          // Sungai dihitung terlayani jika salah satu titik koordinatnya berada dalam radius buffer
           if (minDistToLine <= bufferRadius) drainageCount++;
           
-          // Track nearest drainage overall
+          // Catat sungai terdekat dari seluruh sungai yang ada
           if (minDistToLine < minDist) { 
             minDist = minDistToLine; 
             nearestDrainage = { distance: minDistToLine.toFixed(0), type: f.properties.waterway || 'drain' }; 
@@ -473,13 +562,18 @@ const MapDashboard = ({ onBack }) => {
     setPriorityAreas(results.filter(r => r.drainageInBuffer === 0 && r.severity === 'high').sort((a, b) => b.jumlah_titik - a.jumlah_titik));
   };
 
+  /**
+   * Analisis kedekatan: mencari jarak ke titik sungai terdekat untuk setiap titik banjir.
+   * Skor kedekatan: "Baik" di bawah 500 m, "Sedang" di bawah 1000 m, selain itu "Buruk".
+   * Hasil disimpan ke analysisResults.
+   */
   const performProximityAnalysis = () => {
     if (!drainageData || floodPoints.length === 0) { alert('Data belum tersedia'); return; }
     const results = floodPoints.map(point => {
       let minDist = Infinity, info = null;
       drainageData.features?.forEach(f => {
         if (f.geometry.type === 'LineString') {
-          // Check ALL coordinates in the LineString to find the closest point
+          // Periksa seluruh koordinat LineString untuk mencari titik terdekat
           f.geometry.coordinates.forEach(([lng, lat]) => {
             const dist = calculateDistance(point.lat, point.lng, lat, lng);
             if (dist < minDist) {
@@ -495,6 +589,11 @@ const MapDashboard = ({ onBack }) => {
     setSelectedAnalysis('proximity');
   };
 
+  /**
+   * Memberi skor prioritas pada setiap titik banjir (jumlah titik, tingkat keparahan,
+   * dan hasil analisis buffer bila sudah ada), lalu mengambil 5 teratas sebagai area prioritas.
+   * Nama area ditimpa dengan label skenario uji coba; nama asli disimpan di originalKecamatan dan originalNamaKecamatan.
+   */
   const identifyPriorityAreas = () => {
     const scored = floodPoints.map(p => {
       let score = 0;
@@ -506,6 +605,7 @@ const MapDashboard = ({ onBack }) => {
       }
       return { ...p, priorityScore: score, priorityLevel: score >= 80 ? 'Sangat Mendesak' : score >= 60 ? 'Mendesak' : score >= 40 ? 'Perlu Perhatian' : 'Monitor' };
     });
+    // Label skenario uji coba untuk lima area prioritas teratas
     const priorityScenarioNames = ['Skenario Uji Coba Wilayah A', 'Skenario Uji Coba Wilayah B', 'Skenario Uji Coba Wilayah C', 'Skenario Uji Coba Wilayah D', 'Skenario Uji Coba Wilayah E'];
     const simulatedPriorityAreas = scored
       .sort((a, b) => b.priorityScore - a.priorityScore)
@@ -524,8 +624,15 @@ const MapDashboard = ({ onBack }) => {
   // ========================================
   // HANDLERS
   // ========================================
+  // Membalik status tampil satu layer berdasarkan nama key di activeLayers
   const toggleLayer = layer => setActiveLayers(p => ({ ...p, [layer]: !p[layer] }));
 
+  /**
+   * Mengaktifkan atau menonaktifkan satu layer topografi.
+   * Saat diaktifkan dan data belum ada di cache, GeoJSON dimuat juga di sini.
+   *
+   * @param {string} key Nama layer topografi.
+   */
   const toggleTopoLayer = (key) => {
     setActiveTopoLayers(prev => {
       const newActive = !prev[key];
@@ -536,6 +643,12 @@ const MapDashboard = ({ onBack }) => {
     });
   };
 
+  /**
+   * Menyalakan atau mematikan seluruh layer dalam satu grup topografi.
+   * Jika grup sebelumnya tidak ada yang aktif, semua layer grup dimuat.
+   *
+   * @param {string} group Nama grup dari TOPO_GROUPS.
+   */
   const toggleTopoGroup = (group) => {
     const groupKeys = TOPO_LAYERS.filter(l => l.group === group).map(l => l.key);
     const anyActive = groupKeys.some(k => activeTopoLayers[k]);
@@ -553,6 +666,9 @@ const MapDashboard = ({ onBack }) => {
     }
   };
 
+  /**
+   * Mengatur layer buffer. Jika analisis buffer belum dijalankan, analisis dijalankan dulu lalu layer dinyalakan.
+   */
   const handleBufferZonesToggle = () => {
     if (!analysisResults || selectedAnalysis !== 'buffer') {
       if (!drainageData || floodPoints.length === 0) { alert('Data belum tersedia'); return; }
@@ -563,8 +679,15 @@ const MapDashboard = ({ onBack }) => {
     }
   };
 
-  const toggleDarkMode = () => { setDarkMode(d => !d); document.body.classList.toggle('dark-mode'); };
+  // Membalik mode gelap. Nilai disimpan ke localStorage oleh effect terpisah.
+  const toggleDarkMode = () => setDarkMode(d => !d);
 
+  /**
+   * Mengunduh objek GeoJSON sebagai file .geojson melalui link sementara.
+   *
+   * @param {Object|null} data Objek GeoJSON yang akan diunduh. Jika null, fungsi tidak melakukan apa pun.
+   * @param {string} filename Nama file hasil unduhan.
+   */
   const downloadGeoJson = (data, filename) => {
     if (!data) return;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/geo+json' });
@@ -574,6 +697,13 @@ const MapDashboard = ({ onBack }) => {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Mengunduh teks sebagai file melalui Blob dan link sementara.
+   *
+   * @param {string} content Isi file.
+   * @param {string} filename Nama file hasil unduhan.
+   * @param {string} [mimeType='text/plain;charset=utf-8'] Tipe MIME file.
+   */
   const downloadTextFile = (content, filename, mimeType = 'text/plain;charset=utf-8') => {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -584,6 +714,7 @@ const MapDashboard = ({ onBack }) => {
     URL.revokeObjectURL(url);
   };
 
+  // Handler ekspor: isi file dibentuk oleh utilitas reportExportUtils lalu diunduh lewat downloadTextFile.
   const exportPriorityAreasCsv = () => {
     if (!priorityAreas.length) return;
 
@@ -628,6 +759,7 @@ const MapDashboard = ({ onBack }) => {
     downloadTextFile(lines, `batch-risk-summary-${getTimestampString()}.txt`);
   };
 
+  // Mengunduh GeoJSON layer topografi. Bila belum di cache, data dimuat dulu; galat dimuat diabaikan.
   const downloadTopoLayer = async (key) => {
     if (topoLayerData[key]) {
       downloadGeoJson(topoLayerData[key], `${key}.geojson`);
@@ -642,8 +774,10 @@ const MapDashboard = ({ onBack }) => {
   // ========================================
   // ML PREDICTION
   // ========================================
+  // Alamat API ML diambil dari VITE_ML_API_URL; tanpa variabel tersebut dipakai localhost:5000
   const ML_API = import.meta.env.VITE_ML_API_URL || 'http://localhost:5000';
 
+  // Mengambil informasi model dari endpoint /api/health. Galat diabaikan agar dashboard tetap jalan tanpa API.
   const fetchMlModelInfo = async () => {
     try {
       const res = await fetch(`${ML_API}/api/health`);
@@ -651,14 +785,21 @@ const MapDashboard = ({ onBack }) => {
     } catch { /* API not running */ }
   };
 
+  // Memuat info model sekali saat komponen pertama kali dipasang
   useEffect(() => {
     fetchMlModelInfo();
   }, []);
 
+  // Sisa dari pemilihan kelurahan lama; digantikan interaksi klik peta dan tidak dipanggil di mana pun
   const handleKelurahanSelect = (val) => {
     // REMOVED — replaced by map click interaction
   };
 
+  /**
+   * Mengirim satu titik yang dipilih ke endpoint /api/predict, lalu menghitung
+   * rumah sakit terdekat, durasi genangan, dan saran evakuasi dari hasil prediksi.
+   * Status 'no-api' dipakai bila request gagal karena jaringan.
+   */
   const predictSingleArea = async () => {
     if (!mlPickedPoint) return;
     setMlStatus('loading');
@@ -680,7 +821,7 @@ const MapDashboard = ({ onBack }) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const resultData = await res.json();
       setMlResult(resultData);
-      // Compute derived outputs
+      // Hitung turunan hasil: rumah sakit terdekat, durasi genangan, dan saran evakuasi
       const hospital = getNearestHospital(lat, lon, hospitalData);
       const duration = getFloodDuration(resultData.predicted_class, mlForm.elev_mean);
       const advice   = getEvacuationAdvice(resultData.predicted_class);
@@ -710,6 +851,10 @@ const MapDashboard = ({ onBack }) => {
     setMlForm((form) => ({ ...form, ...patch }));
   };
 
+  /**
+   * Menghitung estimasi risiko secara lokal tanpa memanggil API ML, memakai buildOfflineRiskEstimate.
+   * Hasilnya diolah dengan alur turunan yang sama seperti predictSingleArea.
+   */
   const predictSingleAreaOffline = () => {
     if (!mlPickedPoint) return;
 
@@ -732,6 +877,11 @@ const MapDashboard = ({ onBack }) => {
     setShowMlLayer(true);
   };
 
+  /**
+   * Mengirim seluruh titik (sesuai mlBatchScope) ke endpoint /api/predict/batch.
+   * Hasil dicocokkan kembali ke titik asal berdasarkan indeks, lalu diberi skor prioritas,
+   * diurutkan, dan dihitung ringkasannya per kelas risiko.
+   */
   const predictBatchAreas = async () => {
     setMlBatchStatus('loading');
     setMlBatchResults([]);
@@ -769,6 +919,7 @@ const MapDashboard = ({ onBack }) => {
         const sourcePoint = targetPoints[row.index] || {};
         const lat = Number(sourcePoint.lat ?? row.lat);
         const lng = Number(sourcePoint.lng ?? sourcePoint.lon ?? row.lng ?? row.lon);
+        // Skor prioritas gabungan: 65% risk_score, 20% confidence, 15% jumlah titik. Baris gagal diberi skor 0.
         const priorityScore = row.success
           ? ((row.risk_score || 0) * 0.65) + ((row.confidence || 0) * 0.2) + ((sourcePoint.jumlah_titik || 0) * 0.15)
           : 0;
@@ -813,11 +964,13 @@ const MapDashboard = ({ onBack }) => {
     }
   };
 
+  // Masuk atau keluar mode layar penuh pada elemen dokumen. Status fullscreen diatur manual, tidak dibaca dari event.
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); setFullscreen(true); }
     else { document.exitFullscreen(); setFullscreen(false); }
   };
 
+  // Titik banjir yang lolos filter keparahan dan pencarian kecamatan (tanpa membedakan huruf besar)
   const filteredFloodPoints = floodPoints.filter(p => {
     const matchSev = filterSeverity === 'all' || p.severity === filterSeverity;
     const matchSearch = p.kecamatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -825,6 +978,7 @@ const MapDashboard = ({ onBack }) => {
     return matchSev && matchSearch;
   });
 
+  // Hasil batch ML yang berhasil, difilter per kelas, lalu diurutkan sesuai mlBatchSortBy. Dipakai panel ML, peta, dan ekspor.
   const sortedBatchResults = mlBatchResults
     .filter(row => row.success)
     .filter(row => mlBatchRiskFilter === 'all' || row.predicted_class === mlBatchRiskFilter)
@@ -841,6 +995,7 @@ const MapDashboard = ({ onBack }) => {
   // ========================================
 
   // Drainage channels
+  // Biru untuk saluran drain, hijau untuk jenis waterway lainnya
   const drainageStyle = f => ({
     color: f.properties.waterway === 'drain' ? '#38bdf8' : '#34d399',
     weight: 2,
@@ -848,6 +1003,7 @@ const MapDashboard = ({ onBack }) => {
     dashArray: '6 3',
   });
 
+  // Menyeragamkan label kelas risiko (mengandung 'tinggi', 'sedang', atau 'rendah') menjadi kunci baku; selain itu 'unknown'
   const normalizeRiskClass = val => {
     if (!val) return 'unknown';
     const s = String(val).toLowerCase().trim();
@@ -857,18 +1013,30 @@ const MapDashboard = ({ onBack }) => {
     return 'unknown';
   };
 
+  /**
+   * Mengambil kelas risiko dari properti fitur. Mencoba beberapa nama properti: Kelas, kelas, CLASS, class.
+   *
+   * @param {Object} f Fitur GeoJSON poligon risiko banjir.
+   * @returns {string} Kelas hasil normalizeRiskClass.
+   */
   const getRiskClass = f => {
     const p = f?.properties || {};
     return normalizeRiskClass(p.Kelas ?? p.kelas ?? p.CLASS ?? p.class);
   };
 
   // ── Banjir Genangan (abu muda / light gray)
+  /**
+   * Gaya poligon risiko banjir per kelas. Kelas tidak dikenal memakai gaya paling pudar.
+   *
+   * @param {Object} f Fitur GeoJSON poligon risiko banjir.
+   * @returns {Object} Opsi path Leaflet (fillColor, color, weight, dll).
+   */
   const floodRiskStyle = f => {
     const rc = getRiskClass(f);
     const styles = {
-      tinggi: { fill: '#bfdbfe', stroke: '#3b82f6', opacity: 0.65, strokeW: 1.8 },
-      sedang: { fill: '#fef3c7', stroke: '#f59e0b', opacity: 0.55, strokeW: 1.5 },
-      rendah: { fill: '#bbf7d0', stroke: '#10b981', opacity: 0.45, strokeW: 1.2 },
+      tinggi: { fill: '#fecaca', stroke: '#DC2626', opacity: 0.55, strokeW: 1.8 },
+      sedang: { fill: '#fef3c7', stroke: '#F59E0B', opacity: 0.55, strokeW: 1.5 },
+      rendah: { fill: '#bbf7d0', stroke: '#16A34A', opacity: 0.45, strokeW: 1.2 },
       unknown:{ fill: '#f9fafb', stroke: '#f3f4f6', opacity: 0.35, strokeW: 1.0 },
     };
     const s = styles[rc] || styles.unknown;
@@ -884,6 +1052,13 @@ const MapDashboard = ({ onBack }) => {
 
 
   // Popup untuk banjir genangan
+  /**
+   * Memasang popup dan efek hover pada setiap poligon risiko banjir.
+   * Hover menebalkan garis dan menaikkan opasitas isi; mouseout mengembalikan gaya awal.
+   *
+   * @param {Object} feature Fitur GeoJSON poligon.
+   * @param {L.Layer} layer Layer Leaflet hasil render fitur tersebut.
+   */
   const onEachFloodRiskFeature = (feature, layer) => {
     const p = feature.properties || {};
     const rc = getRiskClass(feature);
@@ -906,7 +1081,7 @@ const MapDashboard = ({ onBack }) => {
       </div>
     `);
 
-    // Mark layer type untuk avoid popup conflict
+    // Menandai tipe layer sebagai flood. Properti ini hanya ditulis dan tidak dibaca di file ini
     layer._layerType = 'flood';
     
     const defaultStyle = floodRiskStyle(feature);
@@ -919,6 +1094,12 @@ const MapDashboard = ({ onBack }) => {
 
 
   // ── Topo layer styles (used in map render)
+  /**
+   * Gaya Leaflet untuk layer topografi bertipe area (AR) dan garis (LN). Tipe lain (PT) tidak memakai gaya ini.
+   *
+   * @param {Object} cfg Konfigurasi satu layer dari TOPO_LAYERS.
+   * @returns {Object} Opsi path Leaflet, atau objek kosong untuk tipe yang tidak dikenal.
+   */
   const getTopoStyle = (cfg) => {
     if (cfg.type === 'AR') return {
       fillColor: cfg.fill || cfg.color,
@@ -937,8 +1118,15 @@ const MapDashboard = ({ onBack }) => {
     return {};
   };
 
+  // Warna garis analisis kedekatan: hijau untuk 'Baik', kuning untuk 'Sedang', merah untuk lainnya
   const getProximityLineColor = score => score === 'Baik' ? '#10b981' : score === 'Sedang' ? '#f59e0b' : '#ef4444';
 
+  /**
+   * Label persentase di dalam slice pie. Posisi diletakkan pada 60% jarak dari pusat ke tepi luar.
+   *
+   * @param {Object} props Props label dari Recharts (cx, cy, midAngle, innerRadius, outerRadius, percent).
+   * @returns {JSX.Element} Elemen SVG text berisi persentase.
+   */
   const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
     const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
@@ -963,11 +1151,14 @@ const MapDashboard = ({ onBack }) => {
 
   const stats = getTotalStats();
   const kecamatanData = getKecamatanData();
+  const pieTotal = kecamatanData.reduce((s, d) => s + (d.value || 0), 0);
   const radarData = getRadarData();
   const floodRiskAreaCount = (floodRiskData && floodRiskData.features && floodRiskData.features.length)
     ? floodRiskData.features.length
     : new Set(floodData.map(i => i.kecamatan)).size;
+  // Dihitung saat render dan tidak diperbarui otomatis ketika ukuran layar berubah (tanpa listener resize)
   const isMobileViewport = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+  // Daftar tab untuk navigasi bawah di mobile (sama dengan tab di header desktop)
   const mobileNavItems = [
     { tab: 'overview', label: 'Overview', icon: <Activity size={18} /> },
     { tab: 'layers', label: 'Layers', icon: <Layers size={18} /> },
@@ -977,29 +1168,23 @@ const MapDashboard = ({ onBack }) => {
   ];
 
   const handleMenuToggle = () => {
-    if (isMobileViewport) {
-      setIsMinimized(false);
-    }
     setSidebarOpen(open => !open);
   };
 
+  /**
+   * Mengganti tab aktif. Di layar kecil, sidebar juga dibuka agar konten tab terlihat.
+   *
+   * @param {string} tab Kunci tab: 'overview', 'layers', 'analytics', 'spatial', atau 'ai'.
+   */
   const handleMobileTabSelect = (tab) => {
     setActiveTab(tab);
     if (isMobileViewport) {
-      setIsMinimized(false);
       setSidebarOpen(true);
     }
   };
 
-  const handleMapMinimizeToggle = () => {
-    if (isMobileViewport) {
-      setSidebarOpen(false);
-    }
-    setIsMinimized(minimized => !minimized);
-  };
-
   return (
-    <div className={`app-container ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`app-container ${darkMode ? 'dark-mode' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
 
       {/* HEADER */}
       <header className="header">
@@ -1018,6 +1203,18 @@ const MapDashboard = ({ onBack }) => {
               </div>
             </div>
           </div>
+          <nav className="header-nav" aria-label="Navigasi utama">
+            {[['overview','Overview',<Activity size={18}/>],['layers','Layers',<Layers size={18}/>],['analytics','Analytics',<TrendingUp size={18}/>],['spatial','Spatial',<MapIcon size={18}/>],['ai','Risiko',<Brain size={18}/>]].map(([tab,label,icon]) => (
+              <button
+                key={tab}
+                className={`header-nav-btn ${activeTab===tab?'active':''}`}
+                onClick={()=>{ handleMobileTabSelect(tab); }}
+                aria-current={activeTab===tab ? 'page' : undefined}
+              >
+                {icon}<span>{label}</span>
+              </button>
+            ))}
+          </nav>
           <div className="header-right">
             <div className="search-box">
               <Search size={20} />
@@ -1038,12 +1235,18 @@ const MapDashboard = ({ onBack }) => {
 
         {/* SIDEBAR */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-          <div className="sidebar-tabs">
-            {[['overview','Overview',<Activity size={18}/>],['layers','Layers',<Layers size={18}/>],['analytics','Analytics',<TrendingUp size={18}/>],['spatial','Spatial',<MapIcon size={18}/>],['ai','Risiko',<Brain size={18}/>]].map(([tab,label,icon]) => (
-              <button key={tab} className={`tab-btn ${activeTab===tab?'active':''}`} onClick={()=>{ handleMobileTabSelect(tab); }}>
-                {icon}<span>{label}</span>
-              </button>
-            ))}
+          {/* Mobile-only drawer header with a reachable close button */}
+          <div className="sidebar-mobile-header">
+            <span className="sidebar-mobile-title">
+              {{overview:'Overview', layers:'Layers', analytics:'Analytics', spatial:'Spatial', ai:'Risiko'}[activeTab] || 'Menu'}
+            </span>
+            <button
+              className="sidebar-close-btn"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Tutup panel"
+            >
+              <X size={20} />
+            </button>
           </div>
 
           <div className="sidebar-content">
@@ -1052,11 +1255,11 @@ const MapDashboard = ({ onBack }) => {
             {activeTab === 'overview' && (
               <div className="overview-section">
                 <div className="section-header">
-                  <h3 style={{paddingBottom:'.35rem'}}>Statistik Kota Bekasi <span style={{display:'inline-block',marginLeft:'.8rem',marginBottom:'.15rem',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)',position:'relative'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h3>
+                  <h3 style={{paddingBottom:'.35rem',display:'flex',alignItems:'center',gap:'.6rem',flexWrap:'wrap'}}>Statistik Kota Bekasi <span className="sim-chip" title="Data bersifat simulasi, menunggu integrasi data">Data simulasi</span></h3>
                 </div>
                 <div className="stat-cards">
                   <div className="stat-card gradient-red">
-                    <div className="stat-icon"><AlertTriangle size={28}/></div>
+                    <div className="stat-icon"><AlertTriangle size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{stats.total}</span>
                       <span className="stat-label">Total Titik Banjir</span>
@@ -1064,7 +1267,7 @@ const MapDashboard = ({ onBack }) => {
                     </div>
                   </div>
                   <div className="stat-card gradient-blue">
-                    <div className="stat-icon"><MapPin size={28}/></div>
+                    <div className="stat-icon"><MapPin size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{stats.totalKecamatan}</span>
                       <span className="stat-label">Kecamatan Terdampak</span>
@@ -1072,7 +1275,7 @@ const MapDashboard = ({ onBack }) => {
                     </div>
                   </div>
                   <div className="stat-card gradient-orange">
-                    <div className="stat-icon"><Activity size={28}/></div>
+                    <div className="stat-icon"><Activity size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{hospitalData?.features?.length || 0}</span>
                       <span className="stat-label">Fasilitas Kesehatan</span>
@@ -1080,7 +1283,7 @@ const MapDashboard = ({ onBack }) => {
                     </div>
                   </div>
                   <div className="stat-card gradient-purple">
-                    <div className="stat-icon"><Droplets size={28}/></div>
+                    <div className="stat-icon"><Droplets size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{drainageData?.features?.length || 0}</span>
                       <span className="stat-label">Sungai Utama</span>
@@ -1088,7 +1291,7 @@ const MapDashboard = ({ onBack }) => {
                     </div>
                   </div>
                   <div className="stat-card gradient-green">
-                    <div className="stat-icon"><BarChart3 size={28}/></div>
+                    <div className="stat-icon"><BarChart3 size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{stats.avgPerKecamatan}</span>
                       <span className="stat-label">Rata-rata/Kecamatan</span>
@@ -1096,7 +1299,7 @@ const MapDashboard = ({ onBack }) => {
                     </div>
                   </div>
                   <div className="stat-card gradient-blue">
-                    <div className="stat-icon"><Layers size={28}/></div>
+                    <div className="stat-icon"><Layers size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{floodRiskAreaCount}</span>
                       <span className="stat-label">Peta Tingkat Risiko Banjir per Kelurahan</span>
@@ -1104,39 +1307,56 @@ const MapDashboard = ({ onBack }) => {
                     </div>
                   </div>
                   <div className="stat-card gradient-purple">
-                    <div className="stat-icon"><Database size={28}/></div>
+                    <div className="stat-icon"><Database size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{TOPO_LAYERS.length}</span>
                       <span className="stat-label">Layer Topografi BIG</span>
-                      <span className="stat-change">Peta 1:25.000 · {TOPO_GROUPS.length} kategori</span>
+                      <span className="stat-change">8 kategori · 30 layer</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="chart-section glass-effect">
-                  <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',paddingBottom:'.35rem',flexWrap:'wrap'}}><img src={barChartIcon} alt="Bar Chart" style={{width:'20px',height:'20px',objectFit:'contain'}} />Top Kecamatan Rawan Banjir <span style={{marginLeft:'auto',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h4>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={kecamatanData} margin={{top:10,right:20,left:10,bottom:25}}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3}/>
-                      <XAxis dataKey="name" stroke="#6b7280" tick={false} axisLine/>
-                      <YAxis stroke="#6b7280" style={{fontSize:'.75rem'}} label={{value:'Jumlah Titik',angle:-90,position:'insideLeft',style:{fontSize:'.75rem'}}}/>
-                      <Tooltip contentStyle={{backgroundColor:darkMode?'#1f2937':'#fff',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'.875rem',padding:'8px 12px'}} formatter={v=>[`${v} titik`,'Jumlah']}/>
-                      <Bar dataKey="value" radius={[8,8,0,0]}>
-                        {kecamatanData.map((_, i) => <Cell key={i} fill={COLORS[i%COLORS.length]}/>)}
+                  <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',paddingBottom:'.35rem'}}><img src={barChartIcon} alt="" style={{width:'18px',height:'18px',objectFit:'contain'}} />Top Kecamatan Rawan Banjir</h4>
+                  <ResponsiveContainer width="100%" height={Math.max(180, kecamatanData.length * 38 + 20)}>
+                    <BarChart layout="vertical" data={kecamatanData} margin={{top:4,right:40,left:8,bottom:4}} barCategoryGap={8}>
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={darkMode?'#334155':'#e5e7eb'} opacity={0.5}/>
+                      <XAxis type="number" hide/>
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={96}
+                        tick={{fontSize:11, fill: darkMode?'#cbd5e1':'#475569'}}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={0}
+                      />
+                      <Tooltip
+                        cursor={{fill: darkMode?'rgba(148,163,184,0.12)':'rgba(2,132,199,0.06)'}}
+                        contentStyle={{backgroundColor:darkMode?'#1f2937':'#fff',border:`1px solid ${darkMode?'#334155':'#e5e7eb'}`,borderRadius:'8px',fontSize:'.8rem',padding:'6px 10px'}}
+                        labelStyle={{color:darkMode?'#e2e8f0':'#0f172a',fontWeight:700}}
+                        formatter={v=>[`${v} titik`,'Jumlah']}
+                      />
+                      <Bar dataKey="value" fill="#0284c7" radius={[0,6,6,0]} maxBarSize={22}>
+                        <LabelList dataKey="value" position="right" style={{fontSize:11, fontWeight:700, fill: darkMode?'#e2e8f0':'#0f172a'}}/>
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
 
                 <div className="chart-section glass-effect">
-                  <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',paddingBottom:'.35rem',flexWrap:'wrap'}}><img src={barChartIcon} alt="Distribution" style={{width:'20px',height:'20px',objectFit:'contain'}} />Distribusi Titik Banjir <span style={{marginLeft:'auto',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h4>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',paddingBottom:'.1rem'}}><img src={barChartIcon} alt="" style={{width:'18px',height:'18px',objectFit:'contain'}} />Distribusi Titik per Kecamatan — Top 6</h4>
+                  <p style={{fontSize:'.68rem',color:'#94a3b8',margin:'0 0 .5rem'}}>Proporsi dihitung dari total 6 kecamatan teratas yang ditampilkan.</p>
+                  <ResponsiveContainer width="100%" height={240}>
                     <PieChart>
-                      <Pie data={kecamatanData} cx="50%" cy="45%" labelLine={false} label={renderPieLabel} innerRadius={35} outerRadius={85} dataKey="value" paddingAngle={2}>
+                      <Pie data={kecamatanData} cx="50%" cy="48%" labelLine={false} label={renderPieLabel} innerRadius="38%" outerRadius="66%" dataKey="value" paddingAngle={2}>
                         {kecamatanData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}
                       </Pie>
-                      <Tooltip formatter={(v,_,p)=>[`${v} titik`,p.payload.name]}/>
-                      <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize:'.75rem',paddingTop:'0px',color:'#000000 !important'}} formatter={(value, entry) => <span style={{color:'#000000'}}>{value.length>12?value.slice(0,12)+'…':value}</span>}/>
+                      <Tooltip
+                        contentStyle={{backgroundColor:darkMode?'#1f2937':'#fff',border:`1px solid ${darkMode?'#334155':'#e5e7eb'}`,borderRadius:'8px',fontSize:'.8rem',padding:'6px 10px'}}
+                        formatter={(v,_,p)=>[`${v} titik (${((v/(pieTotal||1))*100).toFixed(1)}%)`, p.payload.name]}
+                      />
+                      <Legend verticalAlign="bottom" height={40} iconType="circle" wrapperStyle={{fontSize:'.72rem',paddingTop:'4px'}} formatter={(value)=><span style={{color:darkMode?'#cbd5e1':'#475569'}}>{value}</span>}/>
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -1146,7 +1366,7 @@ const MapDashboard = ({ onBack }) => {
             {/* LAYERS */}
             {activeTab === 'layers' && (
               <div className="layers-section">
-                <h3 style={{paddingBottom:'.35rem'}}>Layer Management <span style={{display:'inline-block',marginLeft:'.8rem',marginBottom:'.15rem',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)',position:'relative'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h3>
+                <h3 style={{paddingBottom:'.35rem',display:'flex',alignItems:'center',gap:'.6rem',flexWrap:'wrap'}}>Layer Management <span className="sim-chip" title="Data bersifat simulasi, menunggu integrasi data">Data simulasi</span></h3>
                 <div className="layer-controls">
                   {[
                     ['floodPoints','Titik Rawan Banjir',`${filteredFloodPoints.length} lokasi`,<MapPin size={18}/>],
@@ -1173,52 +1393,52 @@ const MapDashboard = ({ onBack }) => {
                 </div>
 
                 {/* ── Topografi BIG 1:25.000 */}
-                <div style={{marginTop:'1.2rem'}}>
-                  <div style={{fontWeight:'700',color:'#0c4a6e',fontSize:'.85rem',marginBottom:'.6rem',display:'flex',alignItems:'center',gap:'.4rem'}}>
+                <div className="topo-section">
+                  <div className="topo-heading">
                     <Database size={15}/> Data Topografi BIG 1:25.000
-                    <span style={{fontSize:'.75rem',color:'#64748b',fontWeight:'400'}}>({TOPO_LAYERS.length} layer)</span>
+                    <span className="topo-heading-count">({TOPO_LAYERS.length} layer)</span>
                   </div>
                   {TOPO_GROUPS.map(group => {
                     const groupLayers = TOPO_LAYERS.filter(l => l.group === group);
                     const anyActive = groupLayers.some(l => activeTopoLayers[l.key]);
                     const isOpen = topoGroupOpen[group];
                     return (
-                      <div key={group} style={{marginBottom:'.5rem',border:'1px solid rgba(14,165,233,0.15)',borderRadius:'10px',overflow:'hidden'}}>
+                      <div key={group} className="topo-group">
                         <div
+                          className={`topo-group-header${anyActive ? ' active' : ''}`}
                           onClick={() => setTopoGroupOpen(p => ({...p, [group]: !p[group]}))}
-                          style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.5rem .75rem',background: anyActive ? 'rgba(14,165,233,0.08)' : 'rgba(248,250,252,0.7)',cursor:'pointer',gap:'.5rem'}}
                         >
-                          <div style={{display:'flex',alignItems:'center',gap:'.5rem'}}>
+                          <div className="topo-group-left">
                             <input
                               type="checkbox"
+                              className="topo-checkbox"
                               checked={anyActive}
                               onChange={() => toggleTopoGroup(group)}
                               onClick={e => e.stopPropagation()}
-                              style={{width:'14px',height:'14px',cursor:'pointer'}}
                             />
-                            <span style={{fontWeight:'600',fontSize:'.8rem',color:'#1e3a5f'}}>{group}</span>
-                            <span style={{fontSize:'.72rem',color:'#94a3b8'}}>({groupLayers.length})</span>
+                            <span className="topo-group-name">{group}</span>
+                            <span className="topo-group-count">({groupLayers.length})</span>
                           </div>
-                          <span style={{fontSize:'.75rem',color:'#94a3b8'}}>{isOpen ? '▲' : '▼'}</span>
+                          <span className="topo-group-caret">{isOpen ? '▲' : '▼'}</span>
                         </div>
                         {isOpen && (
-                          <div style={{padding:'.35rem .6rem .4rem',background:'rgba(255,255,255,0.6)'}}>
+                          <div className="topo-group-body">
                             {groupLayers.map(cfg => (
-                              <div key={cfg.key} style={{display:'flex',alignItems:'center',gap:'.45rem',padding:'.25rem .4rem',borderRadius:'6px',marginBottom:'.15rem'}}>
+                              <label key={cfg.key} className="topo-layer-row">
                                 <input
                                   type="checkbox"
+                                  className="topo-checkbox"
                                   checked={!!activeTopoLayers[cfg.key]}
                                   onChange={() => toggleTopoLayer(cfg.key)}
-                                  style={{width:'13px',height:'13px',cursor:'pointer'}}
                                 />
-                                <span style={{width:'10px',height:'10px',borderRadius: cfg.type==='PT'?'50%':'2px',background:cfg.color,flexShrink:0,opacity:.9}}></span>
-                                <span style={{fontSize:'.78rem',color:'#374151'}}>{cfg.label}</span>
+                                <span className="topo-swatch" style={{borderRadius: cfg.type==='PT'?'50%':'2px',background:cfg.color}}></span>
+                                <span className="topo-layer-label">{cfg.label}</span>
                                 {topoLayerData[cfg.key] && (
-                                  <span style={{fontSize:'.7rem',color:'#94a3b8',marginLeft:'auto'}}>
+                                  <span className="topo-layer-count">
                                     {topoLayerData[cfg.key].features?.length || 0}
                                   </span>
                                 )}
-                              </div>
+                              </label>
                             ))}
                           </div>
                         )}
@@ -1231,21 +1451,25 @@ const MapDashboard = ({ onBack }) => {
                   <h4>Filter Tingkat Keparahan</h4>
                   <select value={filterSeverity} onChange={e=>setFilterSeverity(e.target.value)} className="filter-select glass-effect">
                     <option value="all">Semua Tingkat</option>
-                    <option value="high">🔵 Tinggi (≥20 titik)</option>
-                    <option value="medium">🟡 Sedang (12–19 titik)</option>
-                    <option value="low">🟢 Rendah (&lt;12 titik)</option>
+                    <option value="high">� Tinggi</option>
+                    <option value="medium">🟡 Sedang</option>
+                    <option value="low">🟢 Rendah</option>
                   </select>
                 </div>
 
                 <div className="legend-section glass-effect">
                   <h4>Legenda</h4>
+                  <div className="legend-group-label">Tingkat Risiko Banjir per Kelurahan</div>
                   <div className="legend-items">
-                    {[['#2563EB','Peta Tingkat Risiko Banjir per Kelurahan - Tinggi','≥20 titik banjir'],['#f59e0b','Peta Tingkat Risiko Banjir per Kelurahan - Sedang','12–19 titik banjir'],['#10b981','Peta Tingkat Risiko Banjir per Kelurahan - Rendah','<12 titik banjir']].map(([c,n,d])=>(
+                    {[['#DC2626','Tinggi','≥20 titik banjir'],['#F59E0B','Sedang','12–19 titik banjir'],['#16A34A','Rendah','<12 titik banjir']].map(([c,n,d])=>(
                       <div key={n} className="legend-item">
                         <span className="legend-color" style={{backgroundColor:c}}></span>
                         <div className="legend-text"><strong>{n}</strong><span>{d}</span></div>
                       </div>
                     ))}
+                  </div>
+                  <div className="legend-group-label">Simbol Peta</div>
+                  <div className="legend-items">
                     <div className="legend-item">
                       <span className="legend-line" style={{backgroundColor:'#38bdf8'}}></span>
                       <div className="legend-text"><strong>Sungai Utama</strong><span>OpenStreetMap</span></div>
@@ -1265,6 +1489,7 @@ const MapDashboard = ({ onBack }) => {
               </div>
             )}
 
+            {/* Tab Analytics dan Spatial dirender oleh SpatialAnalysisPanel */}
             {(activeTab === 'analytics' || activeTab === 'spatial') && (
               <SpatialAnalysisPanel
                 activeTab={activeTab}
@@ -1343,7 +1568,8 @@ const MapDashboard = ({ onBack }) => {
         </aside>
 
         {/* MAP SECTION */}
-        <main className={`map-section ${isMinimized ? 'minimized' : ''}`}>
+        <main className="map-section">
+          {/* Peta Leaflet utama. Seluruh layer GeoJSON, marker, dan popup dirender sebagai anak komponen ini */}
           <MapContainer center={mapCenter} zoom={12} style={{height:'100%',width:'100%', cursor: mlPickMode ? 'crosshair' : ''}} className="leaflet-container">
 
             <GeomanControl />
@@ -1358,13 +1584,17 @@ const MapDashboard = ({ onBack }) => {
               }}
             />
 
-            {/* Base tile — clean, light cartographic style */}
+            {/* Base tile — OpenStreetMap (no API key). Dark mode re-styles the
+                same valid OSM tiles via a CSS filter instead of CARTO's
+                key-gated dark_all endpoint (which now returns an
+                "API KEY REQUIRED" placeholder tile). */}
             <TileLayer
-              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-              url={darkMode
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-              }
+              key={darkMode ? 'basemap-dark' : 'basemap-light'}
+              className={darkMode ? 'basemap-dark-tiles' : undefined}
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              subdomains="abc"
+              maxZoom={19}
             />
 
             {/* ── Flood Risk polygons */}
@@ -1430,22 +1660,32 @@ const MapDashboard = ({ onBack }) => {
               <Marker
                 key={point.id}
                 position={[point.lat, point.lng]}
-                icon={createMarkerIcon(point.severity, point.jumlah_titik)}
+                icon={createMarkerIcon(point.severity, selectedPoint?.id === point.id)}
                 eventHandlers={{ click: () => setSelectedPoint(point) }}
               >
-                <Popup className="custom-popup" maxWidth={260}>
+                <Popup className="custom-popup" maxWidth={260} minWidth={240} autoPan>
                   <div className="popup-content">
                     <h4 style={{display:'flex',alignItems:'center',gap:'.4rem'}}>
-                      <img src={mapFlagIcon} alt="Map marker" style={{width:'16px',height:'16px',objectFit:'contain'}} />
+                      <img src={mapFlagIcon} alt="" style={{width:'15px',height:'15px',objectFit:'contain'}} />
                       Titik Rawan Banjir
                     </h4>
-                    <p><strong>Kecamatan:</strong> {point.nama_kecamatan||point.kecamatan}</p>
+                    <div className="popup-title">{point.nama_kecamatan||point.kecamatan||'-'}</div>
+                    <div className="popup-subtitle">Kecamatan</div>
                     <div className="popup-stats">
-                      <p><strong>Jumlah Titik Banjir:</strong> {point.jumlah_titik} titik</p>
-                      <p><strong>Tahun Data:</strong> {point.tahun}</p>
-                      <p><strong>Tingkat Keparahan:</strong> {
-                        point.severity==='high'?'🔴 Tinggi':point.severity==='medium'?'🟡 Sedang':'🟢 Rendah'
-                      }</p>
+                      <div className="popup-stat">
+                        <span className="popup-label">Jumlah titik</span>
+                        <span className="popup-value">{Number.isFinite(point.jumlah_titik)?`${point.jumlah_titik} titik`:'-'}</span>
+                      </div>
+                      <div className="popup-stat">
+                        <span className="popup-label">Tahun data</span>
+                        <span className="popup-value">{point.tahun||'-'}</span>
+                      </div>
+                      <div className="popup-stat">
+                        <span className="popup-label">Tingkat keparahan</span>
+                        <span className={`severity-badge ${point.severity==='high'?'high':point.severity==='medium'?'medium':'low'}`}>
+                          {point.severity==='high'?'Tinggi':point.severity==='medium'?'Sedang':'Rendah'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </Popup>
@@ -1474,6 +1714,7 @@ const MapDashboard = ({ onBack }) => {
             {/* ── Topografi BIG layers */}
             {TOPO_LAYERS.map(cfg => {
               if (!activeTopoLayers[cfg.key] || !topoLayerData[cfg.key]) return null;
+              // Layer titik (PT) dirender sebagai circleMarker berwarna; layer garis dan area memakai getTopoStyle
               if (cfg.type === 'PT') {
                 return (
                   <GeoJSON
@@ -1559,6 +1800,7 @@ const MapDashboard = ({ onBack }) => {
               const lng = Number(row.lng);
               if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
               const markerColor = classColor(row.predicted_class);
+              // Radius marker mengikuti priority_score: 12 px untuk >= 80, 10 px untuk >= 65, selain itu 8 px
               const radius = row.priority_score >= 80 ? 12 : row.priority_score >= 65 ? 10 : 8;
               return (
                 <CircleMarker
@@ -1601,11 +1843,8 @@ const MapDashboard = ({ onBack }) => {
             ))}
           </MapContainer>
 
-          {/* ── Map overlay info panel & minimize btn */}
+          {/* ── Panel info ringkas dan legenda risiko yang tampil di atas peta */}
           <div className="map-overlay">
-            <button className="map-minimize-btn" onClick={handleMapMinimizeToggle} title={isMinimized ? "Restore" : "Minimize"}>
-              {isMinimized ? <Maximize2 size={18}/> : <Minimize2 size={18}/>}
-            </button>
             <div style={{
               background:'rgba(255,255,255,0.92)',
               backdropFilter:'blur(14px)',
@@ -1632,6 +1871,7 @@ const MapDashboard = ({ onBack }) => {
             </div>
 
             {/* Risk legend overlay */}
+            {/* Legenda ditampilkan saat layer risiko aktif. activeLayers tidak memiliki key flashFloodRisk, jadi hanya floodRisk yang berpengaruh */}
             {(activeLayers.floodRisk||activeLayers.flashFloodRisk) && (
               <div style={{
                 position:'fixed',bottom:'20px',right:'20px',
@@ -1651,7 +1891,7 @@ const MapDashboard = ({ onBack }) => {
                 {/* Unified legend: Peta Tingkat Risiko Banjir per Kelurahan */}
                 <div style={{marginBottom:'.8rem'}}>
                   <div style={{fontSize:'.78rem',fontWeight:'700',color:'#6b7280',marginBottom:'.4rem',textTransform:'uppercase',letterSpacing:'.04em'}}>📊 Peta Tingkat Risiko Banjir per Kelurahan</div>
-                  {[['#2563EB','Peta Tingkat Risiko Banjir per Kelurahan - Tinggi'],['#f59e0b','Peta Tingkat Risiko Banjir per Kelurahan - Sedang'],['#10b981','Peta Tingkat Risiko Banjir per Kelurahan - Rendah']].map(([c,l])=>(
+                  {[['#DC2626','Peta Tingkat Risiko Banjir per Kelurahan - Tinggi'],['#F59E0B','Peta Tingkat Risiko Banjir per Kelurahan - Sedang'],['#16A34A','Peta Tingkat Risiko Banjir per Kelurahan - Rendah']].map(([c,l])=>(
                     <div key={l} style={{display:'flex',alignItems:'center',gap:'.5rem',fontSize:'.78rem',marginBottom:'.25rem'}}>
                       <span style={{width:'12px',height:'12px',borderRadius:'3px',background:c,flexShrink:0,opacity:.95}}></span>
                       <span style={{color:'#475569'}}>{l}</span>
@@ -1697,6 +1937,7 @@ const MapDashboard = ({ onBack }) => {
 
       </div>
 
+      {/* Navigasi bawah hanya tampil di layar kecil */}
       {isMobileViewport && (
         <nav className="mobile-bottom-nav" aria-label="Quick sections">
           {mobileNavItems.map((item) => (

@@ -1,17 +1,14 @@
 import React from 'react';
-import { AlertTriangle, Download, Map as MapIcon, Activity, TrendingUp, Database } from 'lucide-react';
+import { AlertTriangle, Download, Map as MapIcon, Activity, TrendingUp } from 'lucide-react';
 import {
   BarChart,
   Bar,
-  Cell,
   CartesianGrid,
-  PieChart,
-  Pie,
   ResponsiveContainer,
   Tooltip,
-  Legend,
   XAxis,
   YAxis,
+  LabelList,
   RadarChart,
   Radar,
   PolarGrid,
@@ -19,8 +16,36 @@ import {
   PolarRadiusAxis,
 } from 'recharts';
 
-const COLORS = ['#991b1b', '#c2410c', '#065f46', '#1e40af', '#6b21a8', '#9f1239'];
-
+/**
+ * Panel analisis pada sidebar dashboard, terdiri dari dua tab.
+ *
+ * Hanya satu tab yang dirender, ditentukan oleh activeTab:
+ * - 'analytics' (tab Analytics, judul "Analisis Mendalam"): bar chart "Top Kecamatan Rawan Banjir",
+ *   kartu "Kedekatan dengan Sungai Utama", daftar "Ranking Kecamatan", dan radar chart.
+ * - 'spatial' (tab Spatial, judul "Analisis Spasial"): pilihan wilayah administratif (adminView),
+ *   kontrol radius buffer, tool kedekatan sungai, tool identifikasi area prioritas, tabel hasil,
+ *   serta daftar Top 5 area prioritas dengan rekomendasi statis.
+ *
+ * Transformasi data:
+ * - Bar chart memakai kecamatanData (dihitung di komponen induk, MapDashboard.jsx, dari floodData).
+ *   Bentuknya { name, value }, berisi jumlah titik banjir per kecamatan, diurutkan menurun, dibatasi 6 entri.
+ * - Radar chart memakai radarData, yang dipetakan dari kecamatanData menjadi { subject, A, fullMark: 30 }.
+ *   Radius sumbu memakai domain [0, ceil(stats.maxFloodPoints * 1.1)], bukan fullMark.
+ * - Daftar "Ranking Kecamatan" tidak memakai kecamatanData. Komponen ini mengurutkan salinan floodPoints
+ *   berdasarkan jumlah_titik dan mengambil lima teratas, sehingga satu kecamatan bisa muncul lebih dari sekali
+ *   jika floodPoints memiliki lebih dari satu baris per kecamatan.
+ *
+ * Kartu kedekatan sungai (tab Analytics):
+ * Nilai "~350m" dan teks keterangan pada kartu adalah placeholder statis yang ditulis langsung di kode.
+ * Nilai ini bukan hasil perhitungan jarak ke sungai. Tombol "Cek Kedekatan" pada tab Spatial memanggil
+ * performProximityAnalysis, tetapi logika perhitungannya berada di komponen induk.
+ *
+ * Chip "Data simulasi" pada judul kedua tab menyatakan bahwa data yang ditampilkan masih simulasi.
+ *
+ * Prop yang diterima namun tidak dipakai di komponen ini (terdeteksi oleh eslint no-unused-vars):
+ * TOPO_LAYERS, TOPO_GROUPS, topoGroupOpen, setTopoGroupOpen, activeTopoLayers, toggleTopoGroup,
+ * toggleTopoLayer, topoLayerData. Prop ini tidak dihapus dan hanya dicatat di sini.
+ */
 export default function SpatialAnalysisPanel({
   activeTab,
   analysisResults,
@@ -30,7 +55,6 @@ export default function SpatialAnalysisPanel({
   exportPrioritySummary,
   kecamatanData,
   darkMode,
-  renderPieLabel,
   bufferRadius,
   setBufferRadius,
   performBufferAnalysis,
@@ -45,8 +69,6 @@ export default function SpatialAnalysisPanel({
   shoppingIcon,
   stats,
   radarData,
-  hospitalData,
-  drainageData,
   TOPO_LAYERS,
   TOPO_GROUPS,
   topoGroupOpen,
@@ -58,7 +80,9 @@ export default function SpatialAnalysisPanel({
   adminView,
   setAdminView,
 }) {
+  // Memastikan floodPoints selalu berupa array sebelum diproses di daftar ranking.
   const points = Array.isArray(floodPoints) ? floodPoints : [];
+  // Penentu tab yang dirender. Kedua blok di bawah bersifat saling eksklusif.
   const showAnalyticsTab = activeTab === 'analytics';
   const showSpatialTab = activeTab === 'spatial';
 
@@ -66,98 +90,34 @@ export default function SpatialAnalysisPanel({
     <>
       {showAnalyticsTab && (
       <div className="analytics-overview-wrapper">
-      <div className="overview-section">
-        <div className="section-header">
-          <h3 style={{paddingBottom:'.35rem'}}>Statistik Kota Bekasi <span style={{display:'inline-block',marginLeft:'.8rem',marginBottom:'.15rem',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)',position:'relative'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h3>
-        </div>
-        <div className="stat-cards">
-          <div className="stat-card gradient-red">
-            <div className="stat-icon"><AlertTriangle size={28}/></div>
-            <div className="stat-content">
-              <span className="stat-value">{stats.total}</span>
-              <span className="stat-label">Total Titik Banjir</span>
-              <span className="stat-change">▲ {stats.highRisk} area high-risk</span>
-            </div>
-          </div>
-          <div className="stat-card gradient-blue">
-            <div className="stat-icon"><MapIcon size={28}/></div>
-            <div className="stat-content">
-              <span className="stat-value">{stats.totalKecamatan}</span>
-              <span className="stat-label">Kecamatan Terdampak</span>
-              <span className="stat-change">{stats.totalRecords} kejadian</span>
-            </div>
-          </div>
-          <div className="stat-card gradient-orange">
-            <div className="stat-icon"><Activity size={28}/></div>
-            <div className="stat-content">
-              <span className="stat-value">{hospitalData?.features?.length || 0}</span>
-              <span className="stat-label">Fasilitas Kesehatan</span>
-              <span className="stat-change">Rumah Sakit & Klinik</span>
-            </div>
-          </div>
-          <div className="stat-card gradient-purple">
-            <div className="stat-icon"><Activity size={28}/></div>
-            <div className="stat-content">
-              <span className="stat-value">{drainageData?.features?.length || 0}</span>
-              <span className="stat-label">Sungai Utama</span>
-              <span className="stat-change">Data OSM</span>
-            </div>
-          </div>
-          <div className="stat-card gradient-green">
-            <div className="stat-icon"><TrendingUp size={28}/></div>
-            <div className="stat-content">
-              <span className="stat-value">{stats.avgPerKecamatan}</span>
-              <span className="stat-label">Rata-rata/Kecamatan</span>
-              <span className="stat-change">Titik per area</span>
-            </div>
-          </div>
-          <div className="stat-card gradient-blue">
-            <div className="stat-icon"><Database size={28}/></div>
-            <div className="stat-content">
-              <span className="stat-value">{TOPO_LAYERS.length}</span>
-              <span className="stat-label">Layer Topografi BIG</span>
-              <span className="stat-change">Peta 1:25.000 · {TOPO_GROUPS.length} kategori</span>
-            </div>
-          </div>
-        </div>
+      <div className="analytics-section">
+        <h3 style={{paddingBottom:'.35rem',display:'flex',alignItems:'center',gap:'.6rem',flexWrap:'wrap'}}>Analisis Mendalam <span className="sim-chip" title="Data bersifat simulasi, menunggu integrasi data">Data simulasi</span></h3>
 
         <div className="chart-section glass-effect">
-          <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',paddingBottom:'.35rem',flexWrap:'wrap'}}><img src={analysisIcon} alt="Chart" style={{width:'20px',height:'20px',objectFit:'contain'}} />Top Kecamatan Rawan Banjir <span style={{marginLeft:'auto',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h4>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={kecamatanData} margin={{top:10,right:20,left:10,bottom:25}}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3}/>
-              <XAxis dataKey="name" stroke="#6b7280" tick={false} axisLine/>
-              <YAxis stroke="#6b7280" style={{fontSize:'.75rem'}} label={{value:'Jumlah Titik',angle:-90,position:'insideLeft',style:{fontSize:'.75rem'}}}/>
-              <Tooltip contentStyle={{backgroundColor:darkMode?'#1f2937':'#fff',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'.875rem',padding:'8px 12px'}} formatter={v=>[`${v} titik`,'Jumlah']}/>
-              <Bar dataKey="value" radius={[8,8,0,0]}>
-                {kecamatanData.map((_, i) => <Cell key={i} fill={COLORS[i%COLORS.length]}/>) }
+          <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',paddingBottom:'.35rem'}}><img src={analysisIcon} alt="" style={{width:'18px',height:'18px',objectFit:'contain'}} />Top Kecamatan Rawan Banjir</h4>
+          <ResponsiveContainer width="100%" height={Math.max(180, kecamatanData.length * 38 + 20)}>
+            <BarChart layout="vertical" data={kecamatanData} margin={{top:4,right:40,left:8,bottom:4}} barCategoryGap={8}>
+              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={darkMode?'#334155':'#e5e7eb'} opacity={0.5}/>
+              <XAxis type="number" hide/>
+              <YAxis type="category" dataKey="name" width={96} tick={{fontSize:11, fill: darkMode?'#cbd5e1':'#475569'}} tickLine={false} axisLine={false} interval={0}/>
+              <Tooltip
+                cursor={{fill: darkMode?'rgba(148,163,184,0.12)':'rgba(2,132,199,0.06)'}}
+                contentStyle={{backgroundColor:darkMode?'#1f2937':'#fff',border:`1px solid ${darkMode?'#334155':'#e5e7eb'}`,borderRadius:'8px',fontSize:'.8rem',padding:'6px 10px'}}
+                labelStyle={{color:darkMode?'#e2e8f0':'#0f172a',fontWeight:700}}
+                formatter={v=>[`${v} titik`,'Jumlah']}
+              />
+              <Bar dataKey="value" fill="#0284c7" radius={[0,6,6,0]} maxBarSize={22}>
+                <LabelList dataKey="value" position="right" style={{fontSize:11, fontWeight:700, fill: darkMode?'#e2e8f0':'#0f172a'}}/>
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="chart-section glass-effect">
-          <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',paddingBottom:'.35rem',flexWrap:'wrap'}}><img src={analysisIcon} alt="Distribution" style={{width:'20px',height:'20px',objectFit:'contain'}} />Distribusi Titik Banjir <span style={{marginLeft:'auto',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={kecamatanData} cx="50%" cy="45%" labelLine={false} label={renderPieLabel} innerRadius={35} outerRadius={85} dataKey="value" paddingAngle={2}>
-                {kecamatanData.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>) }
-              </Pie>
-              <Tooltip formatter={(v,_,p)=>[`${v} titik`,p.payload.name]}/>
-              <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize:'.75rem',paddingTop:'0px',color:'#000000 !important'}} formatter={(value) => <span style={{color:'#000000'}}>{value.length>12?value.slice(0,12)+'…':value}</span>}/>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-      </div>
-
-      <div className="analytics-section">
-        <h3 style={{paddingBottom:'.35rem'}}>Analisis Spasial <span style={{display:'inline-block',marginLeft:'.8rem',marginBottom:'.15rem',padding:'.3rem .65rem',background:'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',color:'#fff',fontSize:'.7rem',fontWeight:'800',borderRadius:'6px',whiteSpace:'normal',lineHeight:'1.1',letterSpacing:'.05em',textTransform:'none',boxShadow:'0 2px 8px rgba(251, 191, 36, 0.3)',position:'relative'}}>Data bersifat Simulasi,<br/>Menunggu Integrasi Data</span></h3>
         <div className="analysis-card glass-effect">
-          <h4 style={{display:'flex',alignItems:'center',gap:'.5rem'}}><img src={analysisIcon} alt="Sungai Utama" style={{width:'20px',height:'20px',objectFit:'contain'}} />Kedekatan dengan Sungai Utama</h4>
+          <h4 style={{display:'flex',alignItems:'center',gap:'.5rem',flexWrap:'wrap'}}><img src={analysisIcon} alt="Sungai Utama" style={{width:'20px',height:'20px',objectFit:'contain'}} />Kedekatan dengan Sungai Utama <span className="estimate-chip">Estimasi</span></h4>
           <p>Analisis kedekatan titik banjir dengan sungai utama</p>
-          <div className="metric-large">~350m</div>
-          <p className="metric-note">Jarak rata-rata estimasi</p>
+          <div className="metric-estimate">~350m</div>
+          <p className="metric-note">Placeholder statis — bukan hasil perhitungan proximity aktual</p>
         </div>
         <div className="analysis-card glass-effect">
           <h4 style={{display:'flex',alignItems:'center',gap:'.5rem'}}><img src={analysisIcon} alt="Ranking" style={{width:'20px',height:'20px',objectFit:'contain'}} />Ranking Kecamatan</h4>
@@ -169,20 +129,24 @@ export default function SpatialAnalysisPanel({
                   <strong>{p.nama_kecamatan||p.kecamatan}</strong>
                   <span>{p.jumlah_titik} titik banjir</span>
                 </div>
-                <span className={`severity-badge-small ${p.severity}`}>{p.severity==='high'?'🔴':p.severity==='medium'?'🟡':'🟢'}</span>
+                <span className={`severity-badge-small ${p.severity}`}>{p.severity==='high'?'Tinggi':p.severity==='medium'?'Sedang':'Rendah'}</span>
               </div>
             ))}
           </div>
         </div>
         <div className="chart-section glass-effect">
           <h4 style={{display:'flex',alignItems:'center',gap:'.5rem'}}><img src={satelliteDishIcon} alt="Radar" style={{width:'20px',height:'20px',objectFit:'contain'}} />Radar Analysis</h4>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" aspect={1} maxHeight={300} minHeight={200}>
             <RadarChart data={radarData}>
-              <PolarGrid stroke="#e5e7eb"/>
-              <PolarAngleAxis dataKey="subject" style={{fontSize:'.75rem',fill:'#1e3a8a'}}/>
-              <PolarRadiusAxis angle={90} domain={[0,Math.ceil(stats.maxFloodPoints*1.1)]}/>
-              <Radar name="Jumlah Titik" dataKey="A" stroke="#1e40af" fill="#1e40af" fillOpacity={0.6}/>
-              <Tooltip/>
+              <PolarGrid stroke={darkMode?'#334155':'#e5e7eb'}/>
+              <PolarAngleAxis dataKey="subject" tick={{fontSize:11, fill: darkMode?'#cbd5e1':'#475569'}}/>
+              <PolarRadiusAxis angle={90} domain={[0,Math.ceil(stats.maxFloodPoints*1.1)]} tick={{fontSize:10, fill: darkMode?'#94a3b8':'#94a3b8'}}/>
+              <Radar name="Jumlah Titik" dataKey="A" stroke="#0284c7" fill="#0284c7" fillOpacity={0.5}/>
+              <Tooltip
+                contentStyle={{backgroundColor:darkMode?'#1f2937':'#fff',border:`1px solid ${darkMode?'#334155':'#e5e7eb'}`,borderRadius:'8px',fontSize:'.8rem',padding:'6px 10px'}}
+                labelStyle={{color:darkMode?'#e2e8f0':'#0f172a',fontWeight:700}}
+                formatter={v=>[`${v} titik`,'Jumlah']}
+              />
             </RadarChart>
           </ResponsiveContainer>
         </div>

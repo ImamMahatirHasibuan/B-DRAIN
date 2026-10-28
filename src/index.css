@@ -1,9 +1,11 @@
+/* Reset dasar: menghapus margin dan padding bawaan, serta mengatur box-sizing ke border-box untuk semua elemen. */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Variabel tipografi dasar (font, line-height, bobot) dan pengaturan render teks untuk seluruh halaman. */
 :root {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -15,6 +17,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Gaya body: lebar penuh layar, tinggi minimal satu layar, scroll vertikal aktif, dan latar abu-abu muda. */
 body {
   margin: 0;
   padding: 0;
@@ -25,11 +28,13 @@ body {
   background-color: #f8fafc;
 }
 
+/* Kontainer React (#root) mengisi lebar dan tinggi halaman. */
 #root {
   width: 100%;
   min-height: 100%;
 }
 
+/* Untuk browser yang mendukung dvh: tinggi minimal memakai viewport dinamis, sehingga tampilan mobile lebih akurat. */
 @supports (height: 100dvh) {
   body {
     min-height: 100dvh;
@@ -40,7 +45,7 @@ body {
   }
 }
 
-/* Leaflet map fixes */
+/* Leaflet map fixes: menyeragamkan font pada kontainer peta Leaflet dengan font aplikasi. */
 .leaflet-container {
   font-family: 'Inter', system-ui, sans-serif;
 }
