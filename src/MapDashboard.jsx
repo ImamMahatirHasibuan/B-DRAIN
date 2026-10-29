@@ -7,7 +7,7 @@
 // Menampilkan peta Leaflet, sidebar tab (Overview, Layers, Analytics, Spatial, Risiko),
 // data GeoJSON dari folder public/data, serta integrasi API prediksi ML.
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapContainer, TileLayer, GeoJSON, Marker, Popup, 
   Circle, CircleMarker, Polyline, useMap, LayersControl, useMapEvents
@@ -284,6 +284,30 @@ const MapDashboard = ({ onBack }) => {
   const [priorityAreas, setPriorityAreas] = useState([]);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  // Status pembukaan input pencarian pada mobile. Input hanya tampil saat ikon search ditekan atau ada teks filter.
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
+  // Status viewport mobile (<= 768px). Diperbarui lewat listener resize dan dibersihkan saat komponen unmount.
+  const [isMobileViewport, setIsMobileViewport] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+  useEffect(() => {
+    const handleResize = () => setIsMobileViewport(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  // Kotak pencarian tetap terbuka selama ada teks filter, agar pengguna melihat filter yang sedang aktif.
+  const isSearchVisible = mobileSearchOpen || searchQuery !== '';
+  useEffect(() => {
+    if (mobileSearchOpen) searchInputRef.current?.focus();
+  }, [mobileSearchOpen]);
+  // Menutup pencarian mobile sekaligus menghapus teks filter agar tidak ada filter tersembunyi.
+  const closeMobileSearch = () => {
+    setSearchQuery('');
+    setMobileSearchOpen(false);
+  };
+  const toggleMobileSearch = () => {
+    if (isSearchVisible) closeMobileSearch();
+    else setMobileSearchOpen(true);
+  };
   // Sidebar terbuka otomatis pada layar lebar (> 768px) dan tertutup pada layar kecil.
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [activeTab, setActiveTab] = useState('overview');
@@ -1156,8 +1180,6 @@ const MapDashboard = ({ onBack }) => {
   const floodRiskAreaCount = (floodRiskData && floodRiskData.features && floodRiskData.features.length)
     ? floodRiskData.features.length
     : new Set(floodData.map(i => i.kecamatan)).size;
-  // Dihitung saat render dan tidak diperbarui otomatis ketika ukuran layar berubah (tanpa listener resize)
-  const isMobileViewport = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   // Daftar tab untuk navigasi bawah di mobile (sama dengan tab di header desktop)
   const mobileNavItems = [
     { tab: 'overview', label: 'Overview', icon: <Activity size={18} /> },
@@ -1216,10 +1238,19 @@ const MapDashboard = ({ onBack }) => {
             ))}
           </nav>
           <div className="header-right">
-            <div className="search-box">
+            <div className={`search-box ${isSearchVisible ? 'is-open' : ''}`}>
               <Search size={20} />
-              <input type="text" placeholder="Cari kecamatan..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Cari kecamatan..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape' && isMobileViewport) closeMobileSearch(); }}
+              />
+              <button type="button" className="search-close-btn" onClick={closeMobileSearch} title="Tutup pencarian" aria-label="Tutup pencarian"><X size={16} /></button>
             </div>
+            <button type="button" className="icon-btn search-toggle-btn" onClick={toggleMobileSearch} title="Cari kecamatan" aria-label="Cari kecamatan" aria-expanded={isSearchVisible}><Search size={20} /></button>
             <button className="icon-btn" onClick={toggleDarkMode} title="Toggle Dark Mode">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
             <button className="icon-btn" onClick={toggleFullscreen} title="Fullscreen">{fullscreen ? <Minimize2 size={20}/> : <Maximize2 size={20}/>}</button>
             <button className="menu-btn" onClick={handleMenuToggle}>{sidebarOpen ? <X size={24}/> : <Menu size={23}/>}</button>

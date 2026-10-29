@@ -195,6 +195,12 @@
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
+/* Tombol ikon search (mobile) dan tombol tutup di dalam kotak pencarian. Keduanya disembunyikan pada layar lebar. */
+.search-toggle-btn,
+.search-close-btn {
+  display: none;
+}
+
 /* Ikon di dalam kotak pencarian, diposisikan absolut di tengah vertikal. */
 .search-box svg {
   position: absolute;
@@ -2252,6 +2258,52 @@
     align-items: center;
   }
 
+  /* Mobile: ikon search tampil di header, sedangkan kotak pencarian hanya tampil saat dibuka atau ada teks filter. */
+  .search-toggle-btn {
+    display: inline-flex;
+  }
+
+  .search-box {
+    display: none;
+  }
+
+  .search-box.is-open {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .search-box.is-open input {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .search-box .search-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+  }
+
+  /* Ikon .search-box svg dibuat absolut untuk ikon kaca pembesar; tombol tutup harus kembali ke alur normal. */
+  .search-box .search-close-btn svg {
+    position: static;
+    transform: none;
+    color: inherit;
+  }
+
+  .dark-mode .search-box .search-close-btn {
+    color: #cbd5e1;
+  }
+
   /* Search takes its own full-width row; control buttons sit on the row above */
   /* Pada layar 768px, kotak pencarian menempati baris penuh di bawah tombol kanan. */
   .search-box {
@@ -2369,7 +2421,12 @@
   .main-content {
     padding: 0;
     overflow-y: auto;
-    padding-bottom: 86px; /* room for fixed bottom nav */
+    /* Tanpa padding bawah: navigasi bawah bersifat fixed, sehingga peta mengisi seluruh area layar. */
+  }
+
+  /* Peta membentuk stacking context sendiri (z-index 0), sehingga kontrol Leaflet (z-index 1000 di dalamnya) tidak bisa tampil di atas navigasi bawah (z-index 260). */
+  .map-section {
+    z-index: 0;
   }
 
   /* Bottom navigation shown across the whole mobile/tablet range (<=768) */
@@ -2377,7 +2434,7 @@
     position: fixed;
     left: 0.75rem;
     right: 0.75rem;
-    bottom: 0.75rem;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
     z-index: 260;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -2625,11 +2682,11 @@
     padding: 0;
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 86px;
+    /* Tanpa padding bawah: navigasi bawah bersifat fixed, sehingga peta mengisi seluruh area layar. */
   }
 
   .sidebar-backdrop {
-    z-index: 230;
+    z-index: 490;
   }
 
   /* bottom-nav base styles inherited from <=768 block; tighten font for very small screens */
@@ -2934,4 +2991,36 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== MOBILE SEARCH INLINE (<=768px) =====
+   Saat kotak pencarian dibuka, input berada di baris tombol header yang sama, tepat di sebelah tombol dark mode.
+   Tombol ikon search disembunyikan selama input terbuka; tombol X di dalam input berfungsi untuk menutupnya. */
+@media (max-width: 768px) {
+  .header-right .search-box.is-open {
+    order: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    margin-top: 0;
+  }
+
+  .header-right .search-box.is-open input {
+    width: 100%;
+    padding: 0.55rem 2.4rem 0.55rem 2.5rem;
+    font-size: 16px; /* mencegah zoom otomatis di iOS saat input difokuskan */
+  }
+
+  .header-right .search-box.is-open .search-close-btn {
+    display: inline-flex;
+    position: absolute;
+    right: 0.3rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .header-right .search-box.is-open + .search-toggle-btn {
+    display: none;
+  }
 }

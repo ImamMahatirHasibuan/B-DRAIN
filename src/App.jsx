@@ -9,7 +9,7 @@
 
 // React dan hook useState untuk state lokal (showMap, showDatasetModal, currentPhotoIndex).
 // Catatan: default import React tidak dipakai secara eksplisit di kode ini (tidak dihapus).
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // Ikon dari lucide-react. Activity, TrendingUp, dan Droplet tidak dipakai di JSX (tidak dihapus).
 import { Activity, Database, TrendingUp, ArrowRight, Github, Mail, Droplet, Check } from 'lucide-react';
 // Komponen dashboard peta; ditampilkan menggantikan landing page saat showMap bernilai true.
@@ -47,13 +47,46 @@ function App() {
   const [showMap, setShowMap] = useState(false);
   const [showDatasetModal, setShowDatasetModal] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  // Pratinjau data nyata dari public/data/data_banjir.geojson untuk bagian Data. Status: loading, ready, atau error.
+  const [dataPreview, setDataPreview] = useState({ status: 'loading', features: [], kecamatan: 0, totalTitik: 0 });
+
+  // Mengambil data_banjir.geojson sekali saat landing dimuat. Ringkasan dihitung dari fitur asli, bukan angka statis.
+  useEffect(() => {
+    let aktif = true;
+    fetch('/data/data_banjir.geojson')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((geojson) => {
+        if (!aktif) return;
+        const features = Array.isArray(geojson.features) ? geojson.features : [];
+        const kecamatanUnik = new Set(features.map((f) => f.properties?.kecamatan)).size;
+        const totalTitik = features.reduce((sum, f) => sum + (Number(f.properties?.jumlah_titik_banjir) || 0), 0);
+        setDataPreview({ status: 'ready', features, kecamatan: kecamatanUnik, totalTitik });
+      })
+      .catch(() => {
+        if (aktif) setDataPreview((prev) => ({ ...prev, status: 'error' }));
+      });
+    return () => { aktif = false; };
+  }, []);
+
+  // Menutup modal dengan tombol Escape selama modal terbuka.
+  useEffect(() => {
+    if (!showDatasetModal) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowDatasetModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showDatasetModal]);
   
   // Sumber foto untuk grid dokumentasi; jumlahnya ditampilkan sebagai Total Foto.
   const photos = [foto1, foto2, foto3, foto4, foto5, foto6, foto7];
   
   // Dataset utama yang dapat diunduh dari modal. Path mengacu ke folder public/data.
   const datasets = [
-    { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: 'Titik rawan banjir historis 30 kecamatan',          path: '/data/data_banjir.geojson' },
+    { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: '70 titik rawan banjir di 12 kecamatan Kota Bekasi', path: '/data/data_banjir.geojson' },
     { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Sungai Utama / infrastruktur air (OpenStreetMap)',   path: '/data/export.geojson' },
     { name: 'sebaran-rumah-sakit-jawa-barat.geojson',             type: 'GeoJSON', desc: 'Sebaran fasilitas kesehatan Jawa Barat',            path: '/data/sebaran-rumah-sakit-jawa-barat.geojson' },
   ];
@@ -166,19 +199,19 @@ function App() {
                 View Dataset
               </button>
             </div>
-            {/* Statistik ringkas hero. Angkanya ditulis statis di JSX, bukan dihitung dari data. */}
+            {/* Statistik ringkas hero. Angka dihitung dari data_banjir.geojson; tampil "-" selama data belum dimuat. */}
             <div className="hero-stats">
               <div className="stat-item">
-                <div className="stat-number">12</div>
+                <div className="stat-number">{dataPreview.kecamatan || '-'}</div>
                 <div className="stat-label">Kecamatan</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">250+</div>
-                <div className="stat-label">Flood Points</div>
+                <div className="stat-number">{dataPreview.features.length || '-'}</div>
+                <div className="stat-label">Titik Data</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">100%</div>
-                <div className="stat-label">Interactive</div>
+                <div className="stat-number">{dataPreview.totalTitik || '-'}</div>
+                <div className="stat-label">Total Titik Banjir</div>
               </div>
             </div>
           </div>
@@ -291,7 +324,7 @@ function App() {
         </div>
       </section>
 
-      {/* Data Section: deskripsi dataset, daftar teknologi, dan tombol menuju dashboard. Kotak di sisi kanan berisi contoh CSV statis. */}
+      {/* Data Section: deskripsi dataset, daftar teknologi, dan tombol menuju dashboard. Kotak di sisi kanan menampilkan pratinjau data_banjir.geojson yang dimuat dari public/data. */}
       <section id="data" className="data-section">
         <div className="section-container">
           <div className="data-content">
@@ -304,7 +337,6 @@ function App() {
                 <span className="tech-badge">Leaflet.js</span>
                 <span className="tech-badge">Recharts</span>
                 <span className="tech-badge">GeoJSON</span>
-                <span className="tech-badge">Papa Parse</span>
               </div>
               <button className="btn-data" onClick={() => setShowMap(true)}>
                 Start Exploring →
@@ -313,13 +345,33 @@ function App() {
             <div className="data-visual">
               <div className="data-box">
                 <div className="data-header">
-                  <span><img src={databaseIcon} alt="Database" style={{width: '20px', height: '20px', marginRight: '0.5rem', verticalAlign: 'middle'}} /> data_jumlah_bencana_alam_banjir.csv</span>
+                  <span><img src={databaseIcon} alt="" style={{width: '20px', height: '20px', marginRight: '0.5rem', verticalAlign: 'middle'}} /> data_banjir.geojson</span>
                 </div>
                 <div className="data-rows">
-                  <div className="data-row">kecamatan,nama_kecamatan,jumlah_titik,tahun...</div>
-                  <div className="data-row">PONDOKGEDE,Pondok Gede,25,2020...</div>
-                  <div className="data-row">JATISAMPURNA,Jati Sampurna,18,2020...</div>
-                  <div className="data-row">BANTARGEBANG,Bantar Gebang,32,2020...</div>
+                  {dataPreview.status === 'loading' && <p className="data-note">Memuat data...</p>}
+                  {dataPreview.status === 'error' && <p className="data-note">Data tidak dapat dimuat. Pastikan file public/data/data_banjir.geojson tersedia.</p>}
+                  {dataPreview.status === 'ready' && (
+                    <>
+                      <p className="data-note">{dataPreview.features.length} fitur, {dataPreview.kecamatan} kecamatan. Menampilkan 6 baris pertama.</p>
+                      <div className="data-table-wrap">
+                        <table className="data-table">
+                          <thead>
+                            <tr><th>Kecamatan</th><th>Titik</th><th>Severity</th><th>Tahun</th></tr>
+                          </thead>
+                          <tbody>
+                            {dataPreview.features.slice(0, 6).map((f, idx) => (
+                              <tr key={idx}>
+                                <td>{f.properties?.nama_kecamatan ?? f.properties?.kecamatan ?? '-'}</td>
+                                <td>{f.properties?.jumlah_titik_banjir ?? '-'}</td>
+                                <td>{f.properties?.severity ?? '-'}</td>
+                                <td>{f.properties?.tahun ?? '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -365,9 +417,9 @@ function App() {
       {/* Dataset Modal: tampil saat showDatasetModal bernilai true. Klik overlay atau tombol × untuk menutup. */}
       {showDatasetModal && (
         <div className="modal-overlay" onClick={() => setShowDatasetModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="dataset-modal-title" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Download Dataset</h2>
+              <h2 id="dataset-modal-title">Download Dataset</h2>
               <button className="modal-close" onClick={() => setShowDatasetModal(false)}>&times;</button>
             </div>
             <div className="modal-body">
