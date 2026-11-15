@@ -3,6 +3,16 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "build": {
+    "env": {
+      "UV_PYTHON": "3.12",
+      "PYTHON_VERSION": "3.12"
+    }
+  },
+  "env": {
+    "UV_PYTHON": "3.12",
+    "PYTHON_VERSION": "3.12"
+  },
   "functions": {
     "api/index.py": {
       "includeFiles": "ml/**"
