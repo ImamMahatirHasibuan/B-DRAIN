@@ -54,11 +54,11 @@ export const buildPriorityAreasCsv = ({ priorityAreas, selectedAnalysis, generat
 
   const rows = priorityAreas.map((area, index) => [
     index + 1,
-    area.nama_kecamatan || area.kecamatan || "-",
+    area.displayAreaName || area.nama_kecamatan || area.kecamatan || "-",
     area.kecamatan || "-",
     area.jumlah_titik || 0,
     area.severity || "-",
-    area.priorityScore || 0,
+    area.priorityScore ?? 0,
     area.priorityLevel || "-",
     selectedAnalysis || "priority",
     generatedAt,
@@ -146,7 +146,7 @@ export const buildBatchResultsCsv = ({ rows, generatedAt }) => {
  * sesuai nilai yang dikembalikan endpoint /api/predict/batch.
  *
  * @param {object} params - Parameter fungsi.
- * @param {{total: number, success: number, failed: number, high: number, medium: number, low: number, avgRiskScore: number}} params.summary - Ringkasan statistik batch.
+ * @param {{total: number, success: number, failed: number, high: number, medium: number, avgRiskScore: number}} params.summary - Ringkasan statistik batch.
  * @param {Array<object>} params.rows - Baris hasil batch yang sudah diurutkan oleh pemanggil. Hanya 10 baris pertama yang ditampilkan.
  * @param {string} params.scope - Cakupan data yang diproses (ditulis apa adanya).
  * @param {string} params.filterClass - Filter kelas risiko yang aktif (ditulis apa adanya).
@@ -168,7 +168,6 @@ export const buildBatchSummaryText = ({ summary, rows, scope, filterClass, sortB
     `Failed: ${summary.failed}`,
     `High: ${summary.high}`,
     `Medium: ${summary.medium}`,
-    `Low: ${summary.low}`,
     `Average Risk Score: ${summary.avgRiskScore}`,
     "Source Data: ml/api.py:/api/predict/batch; public/data/data_banjir.geojson",
     "",

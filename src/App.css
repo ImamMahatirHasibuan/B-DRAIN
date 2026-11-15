@@ -147,9 +147,9 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #0284c7;
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: currentColor;
   background-clip: text;
 }
 
@@ -1339,4 +1339,41 @@ body {
   .section-container {
     padding: 0 1rem;
   }
+}
+
+/* ===== PRATINJAU DATA (bagian Data pada landing) =====
+   Tabel memakai font normal agar nama kecamatan mudah dibaca. Pada layar sempit tabel digulir secara horizontal di dalam pembungkusnya. */
+.data-note {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.data-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  color: #1e293b;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.data-table th {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0c4a6e;
+  background: #f0f9ff;
 }

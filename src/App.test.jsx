@@ -38,7 +38,7 @@ describe('App landing flow', () => {
 
     await user.click(screen.getByRole('button', { name: /View Dataset/i }));
     expect(screen.getByRole('heading', { name: /Download Dataset/i })).toBeInTheDocument();
-    expect(screen.getByText('data_banjir.geojson')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'data_banjir.geojson' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /×/i }));
     expect(screen.queryByRole('heading', { name: /Download Dataset/i })).not.toBeInTheDocument();

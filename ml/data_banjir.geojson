@@ -11,7 +11,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9771, -6.2784]
+        "coordinates": [
+          106.9771,
+          -6.2784
+        ]
       },
       "properties": {
         "id": 1,
@@ -37,7 +40,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9271, -6.3556]
+        "coordinates": [
+          106.9271,
+          -6.3556
+        ]
       },
       "properties": {
         "id": 2,
@@ -63,7 +69,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9869, -6.3074]
+        "coordinates": [
+          106.9869,
+          -6.3074
+        ]
       },
       "properties": {
         "id": 3,
@@ -89,7 +98,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9592, -6.3228]
+        "coordinates": [
+          106.9592,
+          -6.3228
+        ]
       },
       "properties": {
         "id": 4,
@@ -115,7 +127,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0036, -6.3434]
+        "coordinates": [
+          107.0036,
+          -6.3434
+        ]
       },
       "properties": {
         "id": 5,
@@ -141,7 +156,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0142, -6.3119]
+        "coordinates": [
+          107.0142,
+          -6.3119
+        ]
       },
       "properties": {
         "id": 6,
@@ -167,7 +185,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0081, -6.2473]
+        "coordinates": [
+          107.0081,
+          -6.2473
+        ]
       },
       "properties": {
         "id": 7,
@@ -193,7 +214,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0028, -6.2786]
+        "coordinates": [
+          107.0028,
+          -6.2786
+        ]
       },
       "properties": {
         "id": 8,
@@ -219,7 +243,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9869, -6.2642]
+        "coordinates": [
+          106.9869,
+          -6.2642
+        ]
       },
       "properties": {
         "id": 9,
@@ -245,7 +272,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9695, -6.2315]
+        "coordinates": [
+          106.9695,
+          -6.2315
+        ]
       },
       "properties": {
         "id": 10,
@@ -271,7 +301,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9959, -6.2069]
+        "coordinates": [
+          106.9959,
+          -6.2069
+        ]
       },
       "properties": {
         "id": 11,
@@ -297,7 +330,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0014, -6.2251]
+        "coordinates": [
+          107.0014,
+          -6.2251
+        ]
       },
       "properties": {
         "id": 12,
@@ -323,7 +359,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9869, -6.3074]
+        "coordinates": [
+          106.9869,
+          -6.3074
+        ]
       },
       "properties": {
         "id": 13,
@@ -349,7 +388,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0028, -6.2786]
+        "coordinates": [
+          107.0028,
+          -6.2786
+        ]
       },
       "properties": {
         "id": 14,
@@ -375,7 +417,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9592, -6.3228]
+        "coordinates": [
+          106.9592,
+          -6.3228
+        ]
       },
       "properties": {
         "id": 15,
@@ -401,7 +446,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9695, -6.2315]
+        "coordinates": [
+          106.9695,
+          -6.2315
+        ]
       },
       "properties": {
         "id": 16,
@@ -427,7 +475,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0014, -6.2251]
+        "coordinates": [
+          107.0014,
+          -6.2251
+        ]
       },
       "properties": {
         "id": 17,
@@ -453,7 +504,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0081, -6.2473]
+        "coordinates": [
+          107.0081,
+          -6.2473
+        ]
       },
       "properties": {
         "id": 18,
@@ -479,7 +533,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9248, -6.2796]
+        "coordinates": [
+          106.9248,
+          -6.2796
+        ]
       },
       "properties": {
         "id": 19,
@@ -498,7 +555,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9587, -6.3075]
+        "coordinates": [
+          106.9587,
+          -6.3075
+        ]
       },
       "properties": {
         "id": 20,
@@ -517,7 +577,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0142, -6.2514]
+        "coordinates": [
+          107.0142,
+          -6.2514
+        ]
       },
       "properties": {
         "id": 21,
@@ -536,7 +599,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9924, -6.2687]
+        "coordinates": [
+          106.9924,
+          -6.2687
+        ]
       },
       "properties": {
         "id": 22,
@@ -555,7 +621,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9745, -6.2411]
+        "coordinates": [
+          106.9745,
+          -6.2411
+        ]
       },
       "properties": {
         "id": 23,
@@ -574,7 +643,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0354, -6.3001]
+        "coordinates": [
+          107.0354,
+          -6.3001
+        ]
       },
       "properties": {
         "id": 24,
@@ -593,7 +665,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9961, -6.2155]
+        "coordinates": [
+          106.9961,
+          -6.2155
+        ]
       },
       "properties": {
         "id": 25,
@@ -612,7 +687,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9984, -6.3315]
+        "coordinates": [
+          106.9984,
+          -6.3315
+        ]
       },
       "properties": {
         "id": 26,
@@ -631,7 +709,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9774, -6.1895]
+        "coordinates": [
+          106.9774,
+          -6.1895
+        ]
       },
       "properties": {
         "id": 27,
@@ -650,7 +731,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9262, -6.3142]
+        "coordinates": [
+          106.9262,
+          -6.3142
+        ]
       },
       "properties": {
         "id": 28,
@@ -669,7 +753,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [106.9202, -6.3601]
+        "coordinates": [
+          106.9202,
+          -6.3601
+        ]
       },
       "properties": {
         "id": 29,
@@ -688,7 +775,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [107.0081, -6.2473]
+        "coordinates": [
+          107.0081,
+          -6.2473
+        ]
       },
       "properties": {
         "id": 30,
@@ -701,6 +791,1006 @@
         "satuan": "BENCANA/BANJIR",
         "tahun": 2025,
         "severity": "medium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9723,
+          -6.3052
+        ]
+      },
+      "properties": {
+        "id": 31,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATIASIH",
+        "nama_kecamatan": "JATIASIH",
+        "lokasi_spesifik": "Perumahan Pondok Gede Permai (PGP)",
+        "penyebab": "Tanggul Kali Bekasi jebol & limpasan tinggi",
+        "jumlah_titik_banjir": 5,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2020,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Kompas",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9744,
+          -6.2308
+        ]
+      },
+      "properties": {
+        "id": 32,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI BARAT",
+        "nama_kecamatan": "BEKASI BARAT",
+        "lokasi_spesifik": "Perumnas 1 Kranji",
+        "penyebab": "Sumbatan drainase utama pemukiman",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2020,
+        "severity": "high",
+        "sumber_data": "Geocoding Laporan Media",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.0211,
+          -6.2398
+        ]
+      },
+      "properties": {
+        "id": 33,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI TIMUR",
+        "nama_kecamatan": "BEKASI TIMUR",
+        "lokasi_spesifik": "Perumahan Duren Jaya",
+        "penyebab": "Tingginya sedimen drainase & curah hujan",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2021,
+        "severity": "medium",
+        "sumber_data": "Geocoding DetikNews",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.0016,
+          -6.2719
+        ]
+      },
+      "properties": {
+        "id": 34,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "RAWALUMBU",
+        "nama_kecamatan": "RAWALUMBU",
+        "lokasi_spesifik": "Bumi Bekasi Baru (Jembatan 3-8)",
+        "penyebab": "Luapan saluran sekunder tengah",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2022,
+        "severity": "medium",
+        "sumber_data": "Geocoding CNN Indonesia",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.0012,
+          -6.1953
+        ]
+      },
+      "properties": {
+        "id": 35,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI UTARA",
+        "nama_kecamatan": "BEKASI UTARA",
+        "lokasi_spesifik": "Perumahan Pondok Ungu Permai",
+        "penyebab": "Drainase kewalahan menampung debit hujan",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2023,
+        "severity": "medium",
+        "sumber_data": "Geocoding Tribun Bekasi",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9486,
+          -6.2758
+        ]
+      },
+      "properties": {
+        "id": 36,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATIASIH",
+        "nama_kecamatan": "JATIASIH",
+        "lokasi_spesifik": "Perumahan Dosen IKIP",
+        "penyebab": "Kontur tanah cekung bowl & aliran balik",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2024,
+        "severity": "high",
+        "sumber_data": "Geocoding Liputan6",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9691,
+          -6.2415
+        ]
+      },
+      "properties": {
+        "id": 37,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI BARAT",
+        "nama_kecamatan": "BEKASI BARAT",
+        "lokasi_spesifik": "Kawasan Bintara Jaya",
+        "penyebab": "Sistem pompa tidak maksimal saat hujan ekstrem",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2025,
+        "severity": "medium",
+        "sumber_data": "Geocoding Antara News",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9632,
+          -6.2384
+        ]
+      },
+      "properties": {
+        "id": 38,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI BARAT",
+        "nama_kecamatan": "BEKASI BARAT",
+        "lokasi_spesifik": "Perumahan Mas Naga",
+        "penyebab": "Limpasan dari saluran pembuangan utama",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2026,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Lokal",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9854,
+          -6.2621
+        ]
+      },
+      "properties": {
+        "id": 39,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI SELATAN",
+        "nama_kecamatan": "BEKASI SELATAN",
+        "lokasi_spesifik": "Perumahan Pondok Pekayon Indah",
+        "penyebab": "Hujan intensitas tinggi & sumbatan gorong-gorong",
+        "jumlah_titik_banjir": 1,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2026,
+        "severity": "low",
+        "sumber_data": "Geocoding Laporan BPBD",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9731,
+          -6.3075
+        ]
+      },
+      "properties": {
+        "id": 40,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATIASIH",
+        "nama_kecamatan": "JATIASIH",
+        "lokasi_spesifik": "Perumahan Kemang Ifi Graha",
+        "penyebab": "Debit sungai kiriman hulu meluap",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2026,
+        "severity": "high",
+        "sumber_data": "Geocoding Laporan Media",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.9275,
+          -6.3125
+        ]
+      },
+      "properties": {
+        "id": 41,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "PONDOKMELATI",
+        "nama_kecamatan": "PONDOKMELATI",
+        "lokasi_spesifik": "Perumahan Chandra Baru",
+        "penyebab": "Sumbatan drainase & curah hujan ekstrem",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2020,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.975,
+          -6.185
+        ]
+      },
+      "properties": {
+        "id": 42,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "MEDANSATRIA",
+        "nama_kecamatan": "MEDANSATRIA",
+        "lokasi_spesifik": "Kawasan Boulevard Harapan Indah",
+        "penyebab": "Intensitas hujan & kapasitas saluran",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2020,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.931,
+          -6.335
+        ]
+      },
+      "properties": {
+        "id": 43,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATISAMPURNA",
+        "nama_kecamatan": "JATISAMPURNA",
+        "lokasi_spesifik": "Perumahan Wahana Pondok Gede",
+        "penyebab": "Luapan kali lokal & penyempitan gorong-gorong",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2021,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.97,
+          -6.265
+        ]
+      },
+      "properties": {
+        "id": 44,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI SELATAN",
+        "nama_kecamatan": "BEKASI SELATAN",
+        "lokasi_spesifik": "Taman Galaxy (Jalan Utama)",
+        "penyebab": "Drainase lambat menyerap genangan",
+        "jumlah_titik_banjir": 1,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2021,
+        "severity": "low",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.015,
+          -6.33
+        ]
+      },
+      "properties": {
+        "id": 45,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BANTARGEBANG",
+        "nama_kecamatan": "BANTARGEBANG",
+        "lokasi_spesifik": "Perumahan Bekasi Timur Regensi",
+        "penyebab": "Luapan saluran pembuangan utama",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2022,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.025,
+          -6.295
+        ]
+      },
+      "properties": {
+        "id": 46,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "MUSTIKAJAYA",
+        "nama_kecamatan": "MUSTIKAJAYA",
+        "lokasi_spesifik": "Mutiara Gading Timur",
+        "penyebab": "Elevasi tanah & tumpukan sedimen drainase",
+        "jumlah_titik_banjir": 5,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2023,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.915,
+          -6.275
+        ]
+      },
+      "properties": {
+        "id": 47,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "PONDOKGEDE",
+        "nama_kecamatan": "PONDOKGEDE",
+        "lokasi_spesifik": "Perumahan Jatiwaringin Asri",
+        "penyebab": "Antrean air di saluran sekunder",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2024,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.01,
+          -6.25
+        ]
+      },
+      "properties": {
+        "id": 48,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI TIMUR",
+        "nama_kecamatan": "BEKASI TIMUR",
+        "lokasi_spesifik": "Kelurahan Margahayu",
+        "penyebab": "Limpasan dari saluran primer",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2025,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.99,
+          -6.21
+        ]
+      },
+      "properties": {
+        "id": 49,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI UTARA",
+        "nama_kecamatan": "BEKASI UTARA",
+        "lokasi_spesifik": "Perumahan Tytyan Kencana",
+        "penyebab": "Curah hujan tinggi & bottleneck gorong-gorong",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2026,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.96,
+          -6.31
+        ]
+      },
+      "properties": {
+        "id": 50,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATIASIH",
+        "nama_kecamatan": "JATIASIH",
+        "lokasi_spesifik": "Villa Jatirasa",
+        "penyebab": "Bantaran sungai & limpasan Kali Bekasi",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2026,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.953,
+          -6.295
+        ]
+      },
+      "properties": {
+        "id": 51,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATIASIH",
+        "nama_kecamatan": "JATIASIH",
+        "lokasi_spesifik": "Perumahan Bumi Nasio Indah",
+        "penyebab": "Tanggul jebol dan kontur cekung",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2020,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.009,
+          -6.255
+        ]
+      },
+      "properties": {
+        "id": 52,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI TIMUR",
+        "nama_kecamatan": "BEKASI TIMUR",
+        "lokasi_spesifik": "Jalan RA Kartini",
+        "penyebab": "Drainase jalan protokol tersumbat",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2020,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.021,
+          -6.2855
+        ]
+      },
+      "properties": {
+        "id": 53,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "MUSTIKAJAYA",
+        "nama_kecamatan": "MUSTIKAJAYA",
+        "lokasi_spesifik": "Perumahan Mayanggi Pratama",
+        "penyebab": "Curah hujan tinggi lokal",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2020,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.0005,
+          -6.215
+        ]
+      },
+      "properties": {
+        "id": 54,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI UTARA",
+        "nama_kecamatan": "BEKASI UTARA",
+        "lokasi_spesifik": "Prima Harapan Regency",
+        "penyebab": "Limpasan saluran irigasi primer",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2021,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.96,
+          -6.23
+        ]
+      },
+      "properties": {
+        "id": 55,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI BARAT",
+        "nama_kecamatan": "BEKASI BARAT",
+        "lokasi_spesifik": "Puri Bintara",
+        "penyebab": "Backwater dari gorong-gorong utama",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2021,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.005,
+          -6.275
+        ]
+      },
+      "properties": {
+        "id": 56,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "RAWALUMBU",
+        "nama_kecamatan": "RAWALUMBU",
+        "lokasi_spesifik": "Pondok Hijau Permai",
+        "penyebab": "Elevasi rendah di perbatasan jalan tol",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2021,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.98,
+          -6.195
+        ]
+      },
+      "properties": {
+        "id": 57,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "MEDANSATRIA",
+        "nama_kecamatan": "MEDANSATRIA",
+        "lokasi_spesifik": "Kawasan Kelurahan Pejuang",
+        "penyebab": "Kapasitas drainase pemukiman padat",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2022,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.92,
+          -6.365
+        ]
+      },
+      "properties": {
+        "id": 58,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATISAMPURNA",
+        "nama_kecamatan": "JATISAMPURNA",
+        "lokasi_spesifik": "Kranggan Permai",
+        "penyebab": "Air kiriman dari wilayah selatan",
+        "jumlah_titik_banjir": 1,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2022,
+        "severity": "low",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.935,
+          -6.265
+        ]
+      },
+      "properties": {
+        "id": 59,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "PONDOKGEDE",
+        "nama_kecamatan": "PONDOKGEDE",
+        "lokasi_spesifik": "Perumahan Antilope Maju",
+        "penyebab": "Penyempitan penampang saluran sekunder",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2022,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.98,
+          -6.26
+        ]
+      },
+      "properties": {
+        "id": 60,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI SELATAN",
+        "nama_kecamatan": "BEKASI SELATAN",
+        "lokasi_spesifik": "Vila Raya Pekayon",
+        "penyebab": "Antrean aliran menuju sistem pompa",
+        "jumlah_titik_banjir": 1,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2023,
+        "severity": "low",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.035,
+          -6.305
+        ]
+      },
+      "properties": {
+        "id": 61,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "MUSTIKAJAYA",
+        "nama_kecamatan": "MUSTIKAJAYA",
+        "lokasi_spesifik": "Dukuh Zamrud",
+        "penyebab": "Curah hujan di atas kapasitas gorong-gorong",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2023,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.01,
+          -6.345
+        ]
+      },
+      "properties": {
+        "id": 62,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BANTARGEBANG",
+        "nama_kecamatan": "BANTARGEBANG",
+        "lokasi_spesifik": "Kelurahan Ciketing Udik",
+        "penyebab": "Limpasan area terbuka saat hujan ekstrem",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2023,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.96,
+          -6.315
+        ]
+      },
+      "properties": {
+        "id": 63,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATIASIH",
+        "nama_kecamatan": "JATIASIH",
+        "lokasi_spesifik": "Perbatasan Vila Nusa Indah",
+        "penyebab": "Luapan pertemuan sungai Cikeas-Cileungsi",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2024,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.93,
+          -6.32
+        ]
+      },
+      "properties": {
+        "id": 64,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "PONDOKMELATI",
+        "nama_kecamatan": "PONDOKMELATI",
+        "lokasi_spesifik": "Kawasan Puri Gading",
+        "penyebab": "Sumbatan drainase utama",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2024,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.012,
+          -6.242
+        ]
+      },
+      "properties": {
+        "id": 65,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI TIMUR",
+        "nama_kecamatan": "BEKASI TIMUR",
+        "lokasi_spesifik": "Simpang RS Bella / Ir. H. Juanda",
+        "penyebab": "Genangan jalan raya akibat curah hujan",
+        "jumlah_titik_banjir": 1,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2024,
+        "severity": "low",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.005,
+          -6.205
+        ]
+      },
+      "properties": {
+        "id": 66,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI UTARA",
+        "nama_kecamatan": "BEKASI UTARA",
+        "lokasi_spesifik": "Kaliabang Tengah",
+        "penyebab": "Kepadatan pemukiman menutupi resapan air",
+        "jumlah_titik_banjir": 4,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2025,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          107.0,
+          -6.28
+        ]
+      },
+      "properties": {
+        "id": 67,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "RAWALUMBU",
+        "nama_kecamatan": "RAWALUMBU",
+        "lokasi_spesifik": "Kelurahan Pengasinan",
+        "penyebab": "Luapan embung dan drainase",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2025,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.985,
+          -6.21
+        ]
+      },
+      "properties": {
+        "id": 68,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "MEDANSATRIA",
+        "nama_kecamatan": "MEDANSATRIA",
+        "lokasi_spesifik": "Jalan Raya Kaliabang (Alexindo)",
+        "penyebab": "Gorong-gorong industri tidak memadai",
+        "jumlah_titik_banjir": 1,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2025,
+        "severity": "low",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.965,
+          -6.275
+        ]
+      },
+      "properties": {
+        "id": 69,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "JATIASIH",
+        "nama_kecamatan": "JATIASIH",
+        "lokasi_spesifik": "Kawasan Cikunir",
+        "penyebab": "Genangan sisa hujan ekstrem lokal",
+        "jumlah_titik_banjir": 2,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2026,
+        "severity": "medium",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.975,
+          -6.245
+        ]
+      },
+      "properties": {
+        "id": 70,
+        "nama_provinsi": "JAWA BARAT",
+        "bps_nama_kabupaten_kota": "KOTA BEKASI",
+        "kecamatan": "BEKASI BARAT",
+        "nama_kecamatan": "BEKASI BARAT",
+        "lokasi_spesifik": "Perumnas 2 Bekasi",
+        "penyebab": "Luapan saluran pembuangan utama perumahan",
+        "jumlah_titik_banjir": 3,
+        "satuan": "BENCANA/BANJIR",
+        "tahun": 2026,
+        "severity": "high",
+        "sumber_data": "Geocoding Berita Historis",
+        "masa_tanggap_darurat_hari": 14
       }
     }
   ]

@@ -1,0 +1,268 @@
+{
+  "varian_A": {
+    "n": 27,
+    "n_groups": 12,
+    "classes": [
+      "sedang",
+      "tinggi"
+    ],
+    "class_counts": {
+      "sedang": 14,
+      "tinggi": 13
+    },
+    "baseline": {
+      "accuracy": 0.4074074074074074,
+      "balanced_accuracy": 0.39285714285714285,
+      "macro_f1": 0.2894736842105263
+    },
+    "rf_logo": {
+      "accuracy": 0.4444444444444444,
+      "balanced_accuracy": 0.43956043956043955,
+      "macro_f1": 0.4319775596072931
+    },
+    "confusion": [
+      [
+        8,
+        6
+      ],
+      [
+        9,
+        4
+      ]
+    ],
+    "per_group": {
+      "Bantar Gebang": {
+        "n": 2.0,
+        "akurasi": 1.0
+      },
+      "Bekasi Barat": {
+        "n": 3.0,
+        "akurasi": 0.3333333333333333
+      },
+      "Bekasi Selatan": {
+        "n": 3.0,
+        "akurasi": 0.3333333333333333
+      },
+      "Bekasi Timur": {
+        "n": 2.0,
+        "akurasi": 1.0
+      },
+      "Bekasi Utara": {
+        "n": 2.0,
+        "akurasi": 0.5
+      },
+      "Jatiasih": {
+        "n": 3.0,
+        "akurasi": 0.3333333333333333
+      },
+      "Jatisampurna": {
+        "n": 2.0,
+        "akurasi": 0.5
+      },
+      "Medan Satria": {
+        "n": 1.0,
+        "akurasi": 1.0
+      },
+      "Mustika Jaya": {
+        "n": 2.0,
+        "akurasi": 0.5
+      },
+      "Pondok Gede": {
+        "n": 3.0,
+        "akurasi": 0.0
+      },
+      "Pondok Melati": {
+        "n": 1.0,
+        "akurasi": 0.0
+      },
+      "Rawa Lumbu": {
+        "n": 3.0,
+        "akurasi": 0.3333333333333333
+      }
+    }
+  },
+  "varian_B": {
+    "n": 33,
+    "n_groups": 12,
+    "classes": [
+      "sedang",
+      "tinggi"
+    ],
+    "class_counts": {
+      "sedang": 20,
+      "tinggi": 13
+    },
+    "baseline": {
+      "accuracy": 0.6060606060606061,
+      "balanced_accuracy": 0.5,
+      "macro_f1": 0.37735849056603776
+    },
+    "rf_logo": {
+      "accuracy": 0.5757575757575758,
+      "balanced_accuracy": 0.5019230769230769,
+      "macro_f1": 0.4652777777777778
+    },
+    "confusion": [
+      [
+        17,
+        3
+      ],
+      [
+        11,
+        2
+      ]
+    ],
+    "per_group": {
+      "Bantar Gebang": {
+        "n": 3.0,
+        "akurasi": 1.0
+      },
+      "Bekasi Barat": {
+        "n": 3.0,
+        "akurasi": 0.3333333333333333
+      },
+      "Bekasi Selatan": {
+        "n": 3.0,
+        "akurasi": 0.3333333333333333
+      },
+      "Bekasi Timur": {
+        "n": 3.0,
+        "akurasi": 0.6666666666666666
+      },
+      "Bekasi Utara": {
+        "n": 3.0,
+        "akurasi": 0.6666666666666666
+      },
+      "Jatiasih": {
+        "n": 3.0,
+        "akurasi": 0.3333333333333333
+      },
+      "Jatisampurna": {
+        "n": 3.0,
+        "akurasi": 0.6666666666666666
+      },
+      "Medan Satria": {
+        "n": 1.0,
+        "akurasi": 1.0
+      },
+      "Mustika Jaya": {
+        "n": 3.0,
+        "akurasi": 0.6666666666666666
+      },
+      "Pondok Gede": {
+        "n": 3.0,
+        "akurasi": 0.6666666666666666
+      },
+      "Pondok Melati": {
+        "n": 1.0,
+        "akurasi": 0.0
+      },
+      "Rawa Lumbu": {
+        "n": 4.0,
+        "akurasi": 0.5
+      }
+    }
+  },
+  "seed_stability": [
+    {
+      "varian": "label_A",
+      "seed": 0,
+      "rf_accuracy": 0.48148148148148145,
+      "rf_balanced_accuracy": 0.478021978021978,
+      "rf_macro_f1": 0.475,
+      "base_accuracy": 0.4074074074074074,
+      "base_balanced_accuracy": 0.39285714285714285,
+      "base_macro_f1": 0.2894736842105263
+    },
+    {
+      "varian": "label_A",
+      "seed": 1,
+      "rf_accuracy": 0.37037037037037035,
+      "rf_balanced_accuracy": 0.36813186813186816,
+      "rf_macro_f1": 0.36689655172413793,
+      "base_accuracy": 0.4074074074074074,
+      "base_balanced_accuracy": 0.39285714285714285,
+      "base_macro_f1": 0.2894736842105263
+    },
+    {
+      "varian": "label_A",
+      "seed": 2,
+      "rf_accuracy": 0.4444444444444444,
+      "rf_balanced_accuracy": 0.43956043956043955,
+      "rf_macro_f1": 0.4319775596072931,
+      "base_accuracy": 0.4074074074074074,
+      "base_balanced_accuracy": 0.39285714285714285,
+      "base_macro_f1": 0.2894736842105263
+    },
+    {
+      "varian": "label_A",
+      "seed": 3,
+      "rf_accuracy": 0.4444444444444444,
+      "rf_balanced_accuracy": 0.43956043956043955,
+      "rf_macro_f1": 0.4319775596072931,
+      "base_accuracy": 0.4074074074074074,
+      "base_balanced_accuracy": 0.39285714285714285,
+      "base_macro_f1": 0.2894736842105263
+    },
+    {
+      "varian": "label_A",
+      "seed": 4,
+      "rf_accuracy": 0.4444444444444444,
+      "rf_balanced_accuracy": 0.4423076923076923,
+      "rf_macro_f1": 0.4413793103448276,
+      "base_accuracy": 0.4074074074074074,
+      "base_balanced_accuracy": 0.39285714285714285,
+      "base_macro_f1": 0.2894736842105263
+    },
+    {
+      "varian": "label_B",
+      "seed": 0,
+      "rf_accuracy": 0.5454545454545454,
+      "rf_balanced_accuracy": 0.47692307692307695,
+      "rf_macro_f1": 0.44568868980963045,
+      "base_accuracy": 0.6060606060606061,
+      "base_balanced_accuracy": 0.5,
+      "base_macro_f1": 0.37735849056603776
+    },
+    {
+      "varian": "label_B",
+      "seed": 1,
+      "rf_accuracy": 0.5151515151515151,
+      "rf_balanced_accuracy": 0.4519230769230769,
+      "rf_macro_f1": 0.4260869565217391,
+      "base_accuracy": 0.6060606060606061,
+      "base_balanced_accuracy": 0.5,
+      "base_macro_f1": 0.37735849056603776
+    },
+    {
+      "varian": "label_B",
+      "seed": 2,
+      "rf_accuracy": 0.5454545454545454,
+      "rf_balanced_accuracy": 0.47692307692307695,
+      "rf_macro_f1": 0.44568868980963045,
+      "base_accuracy": 0.6060606060606061,
+      "base_balanced_accuracy": 0.5,
+      "base_macro_f1": 0.37735849056603776
+    },
+    {
+      "varian": "label_B",
+      "seed": 3,
+      "rf_accuracy": 0.6060606060606061,
+      "rf_balanced_accuracy": 0.5403846153846154,
+      "rf_macro_f1": 0.5195968645016797,
+      "base_accuracy": 0.6060606060606061,
+      "base_balanced_accuracy": 0.5,
+      "base_macro_f1": 0.37735849056603776
+    },
+    {
+      "varian": "label_B",
+      "seed": 4,
+      "rf_accuracy": 0.5454545454545454,
+      "rf_balanced_accuracy": 0.47692307692307695,
+      "rf_macro_f1": 0.44568868980963045,
+      "base_accuracy": 0.6060606060606061,
+      "base_balanced_accuracy": 0.5,
+      "base_macro_f1": 0.37735849056603776
+    }
+  ]
+}

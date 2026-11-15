@@ -7,7 +7,7 @@
 // Menampilkan peta Leaflet, sidebar tab (Overview, Layers, Analytics, Spatial, Risiko),
 // data GeoJSON dari folder public/data, serta integrasi API prediksi ML.
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapContainer, TileLayer, GeoJSON, Marker, Popup, 
   Circle, CircleMarker, Polyline, useMap, LayersControl, useMapEvents
@@ -58,15 +58,31 @@ import analysisIcon from './assets/analysis.png';
 import barChartIcon from './assets/bar-chart.png';
 import satelliteDishIcon from './assets/satellite-dish.png';
 import {
-  // Utilitas risiko ML: payload request, estimasi offline, durasi genangan, saran evakuasi, dan rumah sakit terdekat.
-  buildOfflineRiskEstimate,
+  // Utilitas risiko ML: payload request, normalisasi ID kelurahan, probabilitas, durasi genangan, saran evakuasi, dan rumah sakit terdekat.
+  ML_ERROR_MESSAGES,
+  ML_VALIDATION_NOTE,
+  ML_VALIDATION_STATUS,
+  ML_VALIDATION_STATUS_UPPER,
+  OFFLINE_ESTIMATE_LABEL,
   buildMlPayload,
   classColor,
+  enrichAndDeduplicateBatchResults,
+  findKelurahanByIdOrName,
+  formatModelProbabilities,
   getEvacuationAdvice,
   getFloodDuration,
   getNearestHospital,
+  normalizeKelurahanId,
   severityToScore,
+  summarizeBatchResults,
 } from './utils/mlRiskUtils';
+import {
+  calculateDistanceMeters,
+  findKotaBekasiKelurahanByPoint,
+  runBufferAnalysis,
+  runPriorityScoring,
+  runProximityAnalysis,
+} from './utils/spatialUtils';
 import {
   // Fungsi pembentuk isi file ekspor CSV dan TXT untuk hasil prioritas dan batch ML.
   buildBatchResultsCsv,
@@ -281,9 +297,35 @@ const MapDashboard = ({ onBack }) => {
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [bufferRadius, setBufferRadius] = useState(350);
   const [analysisResults, setAnalysisResults] = useState(null);
+  const [bufferAnalysisResults, setBufferAnalysisResults] = useState(null);
   const [priorityAreas, setPriorityAreas] = useState([]);
+  const [priorityBufferUsed, setPriorityBufferUsed] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  // Status pembukaan input pencarian pada mobile. Input hanya tampil saat ikon search ditekan atau ada teks filter.
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
+  // Status viewport mobile (<= 768px). Diperbarui lewat listener resize dan dibersihkan saat komponen unmount.
+  const [isMobileViewport, setIsMobileViewport] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+  useEffect(() => {
+    const handleResize = () => setIsMobileViewport(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  // Kotak pencarian tetap terbuka selama ada teks filter, agar pengguna melihat filter yang sedang aktif.
+  const isSearchVisible = mobileSearchOpen || searchQuery !== '';
+  useEffect(() => {
+    if (mobileSearchOpen) searchInputRef.current?.focus();
+  }, [mobileSearchOpen]);
+  // Menutup pencarian mobile sekaligus menghapus teks filter agar tidak ada filter tersembunyi.
+  const closeMobileSearch = () => {
+    setSearchQuery('');
+    setMobileSearchOpen(false);
+  };
+  const toggleMobileSearch = () => {
+    if (isSearchVisible) closeMobileSearch();
+    else setMobileSearchOpen(true);
+  };
   // Sidebar terbuka otomatis pada layar lebar (> 768px) dan tertutup pada layar kecil.
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [activeTab, setActiveTab] = useState('overview');
@@ -301,23 +343,30 @@ const MapDashboard = ({ onBack }) => {
   const [adminView, setAdminView] = useState('kelurahan');
   const [topoGroupOpen, setTopoGroupOpen] = useState({});
 
-  // Input tambahan untuk model ML (elev_mean, severity_score). Nilai ini digabung dengan koordinat titik oleh buildMlPayload.
-  // Input tambahan untuk model ML (elev_mean, severity_score). Nilai ini diteruskan ke buildMlPayload bersama koordinat.
+  // Data 48 Kelurahan Kota Bekasi beserta 9 fitur spasial dan topografi untuk model Random Forest
+  const [kelurahanFeaturesData, setKelurahanFeaturesData] = useState([]);
+  const [kelurahanGeoJson48, setKelurahanGeoJson48] = useState(null);
+
+  // Input parameter elevasi model ML (diambil otomatis dari kelurahan terpilih, dapat disimulasikan pengguna).
   const [mlForm, setMlForm] = useState({
-    elev_mean: 12,
+    elev_mean: 25,
     severity_score: 2,
   });
   // Saat mode pilih titik aktif, klik peta akan menentukan lokasi untuk analisis ML tunggal.
   const [mlPickMode, setMlPickMode] = useState(false);
   const [mlPickedPoint, setMlPickedPoint] = useState(null);
+  const [mlPickedKelurahan, setMlPickedKelurahan] = useState(null);
   const [mlResult, setMlResult] = useState(null);
   const [mlStatus, setMlStatus] = useState('idle');
+  const [mlErrorMessage, setMlErrorMessage] = useState('');
   const [showMlLayer, setShowMlLayer] = useState(true);
   const [mlModelInfo, setMlModelInfo] = useState(null);
+  const [mlModelMetadata, setMlModelMetadata] = useState(null);
   const [mlDerived, setMlDerived] = useState(null);
-  // Cakupan batch ML: 'all' memakai seluruh titik banjir, selain itu hanya titik yang lolos filter pencarian dan keparahan.
+  // Cakupan batch ML per Kelurahan Kota Bekasi: 'all' (48 kelurahan), 'labeled' (33 kelurahan berlabel), 'filtered'
   const [mlBatchScope, setMlBatchScope] = useState('all');
   const [mlBatchStatus, setMlBatchStatus] = useState('idle');
+  const [mlBatchErrorMessage, setMlBatchErrorMessage] = useState('');
   const [mlBatchResults, setMlBatchResults] = useState([]);
   const [mlBatchSummary, setMlBatchSummary] = useState(null);
   const [mlBatchRiskFilter, setMlBatchRiskFilter] = useState('all');
@@ -325,15 +374,11 @@ const MapDashboard = ({ onBack }) => {
 
   /**
    * Memuat GeoJSON satu layer topografi dari public/data/geojson_kota_bekasi.
-   * Hasil disimpan ke state topoLayerData agar tidak diambil ulang.
-   *
-   * @param {string} key Nama layer, sama dengan key di TOPO_LAYERS.
-   * @returns {Promise<Object>} Objek GeoJSON layer tersebut.
-   * @throws {Error} Jika file tidak ditemukan atau tidak valid di kedua lokasi.
+   * Khusus ADMINISTRASIDESA_AR_25K, difilter ke 48 kelurahan Kota Bekasi (WADMKK === 'Kota Bekasi')
+   * agar 34 poligon di luar Kota Bekasi tidak ikut ditampilkan sebagai wilayah Kota Bekasi.
    */
-  const   fetchTopoLayerData = async (key) => {
+  const fetchTopoLayerData = async (key) => {
     if (topoLayerData[key]) return topoLayerData[key];
-    // Coba lokasi utama dulu; bila gagal, coba lokasi cadangan di subfolder
     const primaryPath = `/data/geojson_kota_bekasi/${key}.geojson`;
     const fallbackPath = `/data/geojson_kota_bekasi/geojson_kota_bekasi/${key}.geojson`;
 
@@ -341,23 +386,32 @@ const MapDashboard = ({ onBack }) => {
       try {
         const res = await fetch(path);
         if (!res.ok) return null;
-        // Parse JSON; jika parsing gagal, dianggap null
         try {
           const json = await res.json();
-          // Validasi dasar: harus objek dengan properti type atau features
           if (json && (json.type || json.features)) return json;
           return null;
-        } catch (err) {
+        } catch {
           return null;
         }
-      } catch (err) {
+      } catch {
         return null;
       }
     };
 
-    let data = await tryLoad(primaryPath);
+    let data = key === 'ADMINISTRASIDESA_AR_25K'
+      ? await tryLoad('/data/kelurahan_kota_bekasi_48.geojson')
+      : null;
+    if (!data) data = await tryLoad(primaryPath);
     if (!data) data = await tryLoad(fallbackPath);
     if (!data) throw new Error(`Failed to load topo layer ${key} from ${primaryPath} or ${fallbackPath}`);
+
+    if (key === 'ADMINISTRASIDESA_AR_25K' && Array.isArray(data.features)) {
+      data = {
+        ...data,
+        features: data.features.filter((f) => !f?.properties?.WADMKK || f.properties.WADMKK === 'Kota Bekasi'),
+      };
+    }
+
     setTopoLayerData(prev => ({ ...prev, [key]: data }));
     return data;
   };
@@ -376,13 +430,11 @@ const MapDashboard = ({ onBack }) => {
     };
 
     /**
-     * Mengubah fitur Point GeoJSON titik banjir menjadi objek datar yang dipakai dashboard.
-     * Fitur tanpa koordinat numerik valid akan dibuang.
-     *
-     * @param {Object|null} geoJson Data GeoJSON titik banjir.
-     * @returns {Array<{id: (string|number), lat: number, lng: number, kecamatan: string, nama_kecamatan: string, jumlah_titik: number, severity: string, tahun: (string|number|null)}>}
+     * Mengubah fitur Point GeoJSON titik banjir menjadi objek datar yang dipakai dashboard,
+     * serta memperkaya setiap titik dengan hasil spatial join terhadap 48 kelurahan Kota Bekasi
+     * tanpa membuang titik yang memiliki perbedaan atribut kecamatan sumber.
      */
-    const normalizeFloodPoints = (geoJson) => {
+    const normalizeFloodPoints = (geoJson, auditMap, kel48Geo) => {
       const features = geoJson?.features || [];
       return features
         .map((feature) => {
@@ -391,37 +443,85 @@ const MapDashboard = ({ onBack }) => {
           if (typeof lat !== 'number' || typeof lng !== 'number') return null;
 
           const properties = feature?.properties || {};
-              return {
-                id: properties.id ?? `${properties.kecamatan || properties.nama_kecamatan || 'flood'}-${lat}-${lng}`,
-                lat,
-                lng,
-                kecamatan: properties.kecamatan || properties.bps_nama_kecamatan || properties.nama_kecamatan || '-',
-                nama_kecamatan: properties.nama_kecamatan || properties.bps_nama_kecamatan || properties.kecamatan || '-',
-                // Mendukung beberapa nama properti yang berbeda dari berbagai sumber data
-                jumlah_titik: Number(properties.jumlah_titik ?? properties.jumlah_titik_banjir ?? properties.jumlah_titik_banjar ?? 0),
-                severity: properties.severity || properties.severity_historis || 'low',
-                tahun: properties.tahun || null,
-              };
+          const rawId = properties.id ?? `${properties.kecamatan || properties.nama_kecamatan || 'flood'}-${lat}-${lng}`;
+          const auditRecord = auditMap.get(Number(rawId)) || null;
+          const spatialKel = !auditRecord && kel48Geo ? findKotaBekasiKelurahanByPoint(lat, lng, kel48Geo) : null;
+
+          const kelurahanSpasial = auditRecord?.kelurahan_spasial || spatialKel?.kelurahan || spatialKel?.NAMOBJ || null;
+          const kecamatanSpasial = auditRecord?.kecamatan_spasial || spatialKel?.kecamatan || spatialKel?.WADMKC || null;
+          const kecamatanSumber = properties.kecamatan || properties.bps_nama_kecamatan || properties.nama_kecamatan || '-';
+          const perluDiperiksa = auditRecord
+            ? Boolean(auditRecord.perlu_diperiksa)
+            : !kelurahanSpasial;
+
+          return {
+            id: rawId,
+            lat,
+            lng,
+            kecamatan: properties.kecamatan || properties.bps_nama_kecamatan || properties.nama_kecamatan || '-',
+            nama_kecamatan: properties.nama_kecamatan || properties.bps_nama_kecamatan || properties.kecamatan || '-',
+            kecamatan_sumber: kecamatanSumber,
+            kelurahan_spasial: kelurahanSpasial,
+            kecamatan_spasial: kecamatanSpasial,
+            status_kecamatan: auditRecord?.status_kecamatan || (kelurahanSpasial ? 'sesuai' : 'perlu_diperiksa'),
+            perlu_diperiksa: perluDiperiksa,
+            jumlah_titik: Number(properties.jumlah_titik ?? properties.jumlah_titik_banjir ?? properties.jumlah_titik_banjar ?? 0),
+            severity: properties.severity || properties.severity_historis || 'low',
+            tahun: properties.tahun || null,
+          };
         })
         .filter(Boolean);
     };
 
-    // Memuat data dasar secara paralel. Fetch yang gagal menghasilkan null sehingga dashboard tetap tampil.
     const loadDashboardData = async () => {
-      const [floodGeoJson, hospitalGeoJson, drainageGeoJson, delineasiGeoJson] = await Promise.all([
+      const [
+        floodGeoJson,
+        hospitalGeoJson,
+        drainageGeoJson,
+        delineasiGeoJson,
+        kel48Geo,
+        kel48Json,
+      ] = await Promise.all([
         safeFetchJson('/data/data_banjir.geojson'),
         safeFetchJson('/data/sebaran-rumah-sakit-jawa-barat.geojson'),
         safeFetchJson('/data/export.geojson'),
         safeFetchJson('/data/delineasi-indeks-risiko-banjir.geojson'),
+        safeFetchJson('/data/kelurahan_kota_bekasi_48.geojson'),
+        safeFetchJson('/data/kelurahan_features_48.json'),
       ]);
 
       if (cancelled) return;
 
-      const points = normalizeFloodPoints(floodGeoJson);
+      const auditMap = new Map();
+      if (Array.isArray(kel48Json?.flood_points_audit)) {
+        kel48Json.flood_points_audit.forEach((rec) => {
+          auditMap.set(Number(rec.id), rec);
+        });
+      }
+
+      if (Array.isArray(kel48Json?.kelurahan)) {
+        setKelurahanFeaturesData(kel48Json.kelurahan);
+      }
+      if (kel48Geo) {
+        setKelurahanGeoJson48(kel48Geo);
+        setTopoLayerData((prev) => ({ ...prev, ADMINISTRASIDESA_AR_25K: kel48Geo }));
+      }
+
+      const points = normalizeFloodPoints(floodGeoJson, auditMap, kel48Geo);
       setFloodData(points);
       setFloodPoints(points);
-      // Gunakan file poligon delineasi/genangan jika tersedia
-      setFloodRiskData(delineasiGeoJson || null);
+
+      // Filter juga delineasi risiko ke wilayah Kota Bekasi jika memiliki atribut WADMKK
+      const filteredDelineasi = delineasiGeoJson && Array.isArray(delineasiGeoJson.features)
+        ? {
+            ...delineasiGeoJson,
+            features: delineasiGeoJson.features.filter(
+              (f) => !f?.properties?.WADMKK || f.properties.WADMKK === 'Kota Bekasi'
+            ),
+          }
+        : delineasiGeoJson;
+
+      setFloodRiskData(filteredDelineasi || null);
       setHospitalData(hospitalGeoJson);
       setDrainageData(drainageGeoJson);
       setLoading(false);
@@ -435,7 +535,6 @@ const MapDashboard = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
-    // Memuat otomatis layer topografi yang aktif tetapi belum ada di cache
     const activeKeys = TOPO_LAYERS
       .map(layer => layer.key)
       .filter(key => activeTopoLayers[key] && !topoLayerData[key]);
@@ -455,12 +554,6 @@ const MapDashboard = ({ onBack }) => {
     }
   }, [darkMode]);
 
-  /**
-   * Mengganti tampilan batas administrasi antara level kelurahan dan kecamatan.
-   * Hanya salah satu dari dua layer batas yang aktif pada satu waktu.
-   *
-   * @param {'kelurahan'|'kecamatan'} view Level administrasi yang dipilih.
-   */
   const setAdminViewHandler = (view) => {
     setAdminView(view);
     setActiveTopoLayers(prev => ({
@@ -470,169 +563,99 @@ const MapDashboard = ({ onBack }) => {
     }));
   };
 
-  /**
-   * Menjumlahkan jumlah titik banjir per kecamatan, diurutkan dari terbanyak.
-   *
-   * @returns {Array<{name: string, value: number}>} Maksimal 6 kecamatan teratas.
-   */
   const getKecamatanData = () => {
     const map = {};
     floodData.forEach(item => {
-      if (!map[item.kecamatan]) map[item.kecamatan] = { name: item.nama_kecamatan || item.kecamatan, value: 0 };
-      map[item.kecamatan].value += item.jumlah_titik;
+      const kecKey = item.kecamatan_spasial || item.kecamatan;
+      const kecName = item.kecamatan_spasial || item.nama_kecamatan || item.kecamatan;
+      if (!map[kecKey]) map[kecKey] = { name: kecName, value: 0 };
+      map[kecKey].value += item.jumlah_titik;
     });
     return Object.values(map).sort((a, b) => b.value - a.value).slice(0, 6);
   };
 
-  // fullMark 30 adalah skala tetap untuk grafik radar, bukan nilai maksimum data
   const getRadarData = () => getKecamatanData().map(item => ({ subject: item.name, A: item.value, fullMark: 30 }));
 
-  /**
-   * Menghitung ringkasan statistik untuk kartu Overview dan overlay peta.
-   *
-   * @returns {{total: number, avgPerKecamatan: (string|number), highRisk: number, totalKecamatan: number, totalRecords: number, yearRange: string, maxFloodPoints: number}}
-   */
   const getTotalStats = () => {
     const total = floodData.reduce((s, i) => s + i.jumlah_titik, 0);
-    const uniqueKec = new Set(floodData.map(i => i.kecamatan));
+    const uniqueKec = new Set(floodData.map(i => i.kecamatan_spasial || i.kecamatan));
     const totalKecamatan = uniqueKec.size;
     const avgPerKecamatan = totalKecamatan > 0 ? (total / totalKecamatan).toFixed(1) : 0;
     const highRisk = floodPoints.filter(p => p.severity === 'high').length;
-    // Tahun data ditulis tetap (hardcoded), tidak dibaca dari properti data
-    const yearRange = '2020';
+    const years = floodData.map(i => Number(i.tahun)).filter(y => Number.isFinite(y) && y > 1900);
+    const yearRange = years.length
+      ? (Math.min(...years) === Math.max(...years) ? String(Math.min(...years)) : `${Math.min(...years)}–${Math.max(...years)}`)
+      : '2020–2026';
     const maxFloodPoints = floodData.length ? Math.max(...floodData.map(i => i.jumlah_titik)) : 30;
     return { total, avgPerKecamatan, highRisk, totalKecamatan, totalRecords: floodData.length, yearRange, maxFloodPoints };
   };
 
   // ========================================
-  // SPATIAL ANALYSIS
+  // SPATIAL ANALYSIS (LineString & MultiLineString Segment Distance)
   // ========================================
+  const calculateDistance = (lat1, lon1, lat2, lon2) => calculateDistanceMeters(lat1, lon1, lat2, lon2);
+
   /**
-   * Menghitung jarak antara dua koordinat memakai rumus haversine dengan jari-jari bumi 6371 km.
-   *
-   * @param {number} lat1 Lintang titik pertama (derajat).
-   * @param {number} lon1 Bujur titik pertama (derajat).
-   * @param {number} lat2 Lintang titik kedua (derajat).
-   * @param {number} lon2 Bujur titik kedua (derajat).
-   * @returns {number} Jarak dalam meter.
+   * Memperbarui radius buffer dan membersihkan hasil analisis buffer/prioritas lama
+   * agar tidak ada hasil dari radius lama yang tertinggal di peta atau panel.
    */
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3;
-    const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const handleBufferRadiusChange = (newRadius) => {
+    setBufferRadius(newRadius);
+    setBufferAnalysisResults(null);
+    if (selectedAnalysis === 'buffer') {
+      setAnalysisResults(null);
+    }
+    if (priorityBufferUsed) {
+      setPriorityAreas([]);
+      setPriorityBufferUsed(false);
+    }
   };
 
   /**
-   * Analisis buffer: untuk setiap titik banjir, menghitung berapa sungai utama
-   * berada dalam radius bufferRadius dan menandai titik sebagai "Terlayani" atau
-   * "Tidak Terlayani". Titik high-risk tanpa sungai dalam buffer masuk daftar prioritas.
-   * Hasil disimpan ke analysisResults dan priorityAreas.
+   * Analisis buffer: menghitung jumlah fitur sungai utama (LineString & MultiLineString)
+   * yang memiliki jarak segmen terpendek <= bufferRadius dari setiap titik banjir pada EPSG:32748.
+   * Menyimpan hasil ke analysisResults dan bufferAnalysisResults secara terpisah dari Proximity Analysis.
    */
   const performBufferAnalysis = () => {
     if (!drainageData || floodPoints.length === 0) { alert('Data belum tersedia'); return; }
-    const results = floodPoints.map(point => {
-      let drainageCount = 0, nearestDrainage = null, minDist = Infinity;
-      drainageData.features?.forEach(f => {
-        if (f.geometry.type === 'LineString') {
-          // Periksa seluruh koordinat LineString, bukan hanya titik pertama
-          let minDistToLine = Infinity;
-          f.geometry.coordinates.forEach(([lng, lat]) => {
-            const dist = calculateDistance(point.lat, point.lng, lat, lng);
-            if (dist < minDistToLine) {
-              minDistToLine = dist;
-            }
-          });
-          
-          // Sungai dihitung terlayani jika salah satu titik koordinatnya berada dalam radius buffer
-          if (minDistToLine <= bufferRadius) drainageCount++;
-          
-          // Catat sungai terdekat dari seluruh sungai yang ada
-          if (minDistToLine < minDist) { 
-            minDist = minDistToLine; 
-            nearestDrainage = { distance: minDistToLine.toFixed(0), type: f.properties.waterway || 'drain' }; 
-          }
-        }
-      });
-      return { ...point, drainageInBuffer: drainageCount, nearestDrainage, coverage: drainageCount > 0 ? 'Terlayani' : 'Tidak Terlayani' };
-    });
+    const results = runBufferAnalysis(floodPoints, drainageData, bufferRadius);
     setAnalysisResults(results);
+    setBufferAnalysisResults(results);
     setSelectedAnalysis('buffer');
-    setPriorityAreas(results.filter(r => r.drainageInBuffer === 0 && r.severity === 'high').sort((a, b) => b.jumlah_titik - a.jumlah_titik));
+    setActiveLayers(p => ({ ...p, bufferZones: true }));
+    const { topPriorityAreas, bufferComponentUsed } = runPriorityScoring(floodPoints, results);
+    setPriorityAreas(topPriorityAreas);
+    setPriorityBufferUsed(bufferComponentUsed);
   };
 
   /**
-   * Analisis kedekatan: mencari jarak ke titik sungai terdekat untuk setiap titik banjir.
-   * Skor kedekatan: "Baik" di bawah 500 m, "Sedang" di bawah 1000 m, selain itu "Buruk".
-   * Hasil disimpan ke analysisResults.
+   * Analisis kedekatan: menghitung jarak terpendek ke segmen sungai (LineString & MultiLineString)
+   * beserta titik koordinat terdekat pada segmen sungai. Tidak menimpa bufferAnalysisResults.
    */
   const performProximityAnalysis = () => {
     if (!drainageData || floodPoints.length === 0) { alert('Data belum tersedia'); return; }
-    const results = floodPoints.map(point => {
-      let minDist = Infinity, info = null;
-      drainageData.features?.forEach(f => {
-        if (f.geometry.type === 'LineString') {
-          // Periksa seluruh koordinat LineString untuk mencari titik terdekat
-          f.geometry.coordinates.forEach(([lng, lat]) => {
-            const dist = calculateDistance(point.lat, point.lng, lat, lng);
-            if (dist < minDist) {
-              minDist = dist;
-              info = { distance: dist.toFixed(0), type: f.properties.waterway || 'drain', coords: { lat, lng }, accessibility: dist < 200 ? 'Sangat Dekat' : dist < 500 ? 'Dekat' : dist < 1000 ? 'Sedang' : 'Jauh' };
-            }
-          });
-        }
-      });
-      return { ...point, nearestDrainage: info, proximityScore: minDist < 500 ? 'Baik' : minDist < 1000 ? 'Sedang' : 'Buruk' };
-    });
+    const results = runProximityAnalysis(floodPoints, drainageData);
     setAnalysisResults(results);
     setSelectedAnalysis('proximity');
   };
 
   /**
-   * Memberi skor prioritas pada setiap titik banjir (jumlah titik, tingkat keparahan,
-   * dan hasil analisis buffer bila sudah ada), lalu mengambil 5 teratas sebagai area prioritas.
-   * Nama area ditimpa dengan label skenario uji coba; nama asli disimpan di originalKecamatan dan originalNamaKecamatan.
+   * Penilaian area prioritas: menggunakan jumlah titik (maks 40), tingkat keparahan (maks 30),
+   * dan komponen hasil Buffer Analysis yang valid (maks 30) bila sudah tersedia di bufferAnalysisResults.
+   * Tidak terpengaruh apabila pengguna baru saja menjalankan Proximity Analysis.
    */
   const identifyPriorityAreas = () => {
-    const scored = floodPoints.map(p => {
-      let score = 0;
-      if (p.jumlah_titik >= 20) score += 40; else if (p.jumlah_titik >= 12) score += 25; else score += 10;
-      if (p.severity === 'high') score += 30; else if (p.severity === 'medium') score += 20; else score += 10;
-      if (analysisResults) {
-        const r = analysisResults.find(r => r.id === p.id);
-        if (r && r.drainageInBuffer === 0) score += 30; else if (r && r.drainageInBuffer < 2) score += 20; else score += 10;
-      }
-      return { ...p, priorityScore: score, priorityLevel: score >= 80 ? 'Sangat Mendesak' : score >= 60 ? 'Mendesak' : score >= 40 ? 'Perlu Perhatian' : 'Monitor' };
-    });
-    // Label skenario uji coba untuk lima area prioritas teratas
-    const priorityScenarioNames = ['Skenario Uji Coba Wilayah A', 'Skenario Uji Coba Wilayah B', 'Skenario Uji Coba Wilayah C', 'Skenario Uji Coba Wilayah D', 'Skenario Uji Coba Wilayah E'];
-    const simulatedPriorityAreas = scored
-      .sort((a, b) => b.priorityScore - a.priorityScore)
-      .slice(0, 5)
-      .map((area, index) => ({
-        ...area,
-        originalNamaKecamatan: area.nama_kecamatan,
-        originalKecamatan: area.kecamatan,
-        nama_kecamatan: priorityScenarioNames[index] || `Skenario Uji Coba Wilayah ${String.fromCharCode(65 + index)}`,
-        kecamatan: priorityScenarioNames[index] || `Skenario Uji Coba Wilayah ${String.fromCharCode(65 + index)}`,
-      }));
-    setPriorityAreas(simulatedPriorityAreas);
+    const { topPriorityAreas, bufferComponentUsed } = runPriorityScoring(floodPoints, bufferAnalysisResults);
+    setPriorityAreas(topPriorityAreas);
+    setPriorityBufferUsed(bufferComponentUsed);
     setSelectedAnalysis('priority');
   };
 
   // ========================================
   // HANDLERS
   // ========================================
-  // Membalik status tampil satu layer berdasarkan nama key di activeLayers
   const toggleLayer = layer => setActiveLayers(p => ({ ...p, [layer]: !p[layer] }));
 
-  /**
-   * Mengaktifkan atau menonaktifkan satu layer topografi.
-   * Saat diaktifkan dan data belum ada di cache, GeoJSON dimuat juga di sini.
-   *
-   * @param {string} key Nama layer topografi.
-   */
   const toggleTopoLayer = (key) => {
     setActiveTopoLayers(prev => {
       const newActive = !prev[key];
@@ -643,12 +666,6 @@ const MapDashboard = ({ onBack }) => {
     });
   };
 
-  /**
-   * Menyalakan atau mematikan seluruh layer dalam satu grup topografi.
-   * Jika grup sebelumnya tidak ada yang aktif, semua layer grup dimuat.
-   *
-   * @param {string} group Nama grup dari TOPO_GROUPS.
-   */
   const toggleTopoGroup = (group) => {
     const groupKeys = TOPO_LAYERS.filter(l => l.group === group).map(l => l.key);
     const anyActive = groupKeys.some(k => activeTopoLayers[k]);
@@ -666,11 +683,8 @@ const MapDashboard = ({ onBack }) => {
     }
   };
 
-  /**
-   * Mengatur layer buffer. Jika analisis buffer belum dijalankan, analisis dijalankan dulu lalu layer dinyalakan.
-   */
   const handleBufferZonesToggle = () => {
-    if (!analysisResults || selectedAnalysis !== 'buffer') {
+    if (!bufferAnalysisResults || selectedAnalysis !== 'buffer') {
       if (!drainageData || floodPoints.length === 0) { alert('Data belum tersedia'); return; }
       performBufferAnalysis();
       setActiveLayers(p => ({ ...p, bufferZones: true }));
@@ -679,15 +693,8 @@ const MapDashboard = ({ onBack }) => {
     }
   };
 
-  // Membalik mode gelap. Nilai disimpan ke localStorage oleh effect terpisah.
   const toggleDarkMode = () => setDarkMode(d => !d);
 
-  /**
-   * Mengunduh objek GeoJSON sebagai file .geojson melalui link sementara.
-   *
-   * @param {Object|null} data Objek GeoJSON yang akan diunduh. Jika null, fungsi tidak melakukan apa pun.
-   * @param {string} filename Nama file hasil unduhan.
-   */
   const downloadGeoJson = (data, filename) => {
     if (!data) return;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/geo+json' });
@@ -697,13 +704,6 @@ const MapDashboard = ({ onBack }) => {
     URL.revokeObjectURL(url);
   };
 
-  /**
-   * Mengunduh teks sebagai file melalui Blob dan link sementara.
-   *
-   * @param {string} content Isi file.
-   * @param {string} filename Nama file hasil unduhan.
-   * @param {string} [mimeType='text/plain;charset=utf-8'] Tipe MIME file.
-   */
   const downloadTextFile = (content, filename, mimeType = 'text/plain;charset=utf-8') => {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -714,38 +714,30 @@ const MapDashboard = ({ onBack }) => {
     URL.revokeObjectURL(url);
   };
 
-  // Handler ekspor: isi file dibentuk oleh utilitas reportExportUtils lalu diunduh lewat downloadTextFile.
   const exportPriorityAreasCsv = () => {
     if (!priorityAreas.length) return;
-
     const generatedAt = new Date().toISOString();
     const timestamp = getTimestampString();
     const csv = buildPriorityAreasCsv({ priorityAreas, selectedAnalysis, generatedAt });
-
     downloadTextFile(csv, `priority-areas-${timestamp}.csv`, 'text/csv;charset=utf-8');
   };
 
   const exportPrioritySummary = () => {
     if (!priorityAreas.length) return;
-
     const generatedAt = new Date().toISOString();
     const lines = buildPrioritySummaryText({ priorityAreas, selectedAnalysis, generatedAt });
-
     downloadTextFile(lines, `priority-summary-${getTimestampString()}.txt`);
   };
 
   const exportBatchResultsCsv = () => {
     if (!sortedBatchResults.length) return;
-
     const generatedAt = new Date().toISOString();
     const csv = buildBatchResultsCsv({ rows: sortedBatchResults, generatedAt });
-
     downloadTextFile(csv, `batch-risk-results-${getTimestampString()}.csv`, 'text/csv;charset=utf-8');
   };
 
   const exportBatchSummary = () => {
     if (!mlBatchSummary) return;
-
     const generatedAt = new Date().toISOString();
     const lines = buildBatchSummaryText({
       summary: mlBatchSummary,
@@ -755,11 +747,9 @@ const MapDashboard = ({ onBack }) => {
       sortBy: mlBatchSortBy,
       generatedAt,
     });
-
     downloadTextFile(lines, `batch-risk-summary-${getTimestampString()}.txt`);
   };
 
-  // Mengunduh GeoJSON layer topografi. Bila belum di cache, data dimuat dulu; galat dimuat diabaikan.
   const downloadTopoLayer = async (key) => {
     if (topoLayerData[key]) {
       downloadGeoJson(topoLayerData[key], `${key}.geojson`);
@@ -772,64 +762,181 @@ const MapDashboard = ({ onBack }) => {
   };
 
   // ========================================
-  // ML PREDICTION
+  // ML PREDICTION (48 Kelurahan Kota Bekasi)
   // ========================================
-  // Alamat API ML diambil dari VITE_ML_API_URL; tanpa variabel tersebut dipakai localhost:5000
-  const ML_API = import.meta.env.VITE_ML_API_URL || 'http://localhost:5000';
+  const ML_API =
+    (import.meta.env.VITE_ML_API_URL !== undefined && import.meta.env.VITE_ML_API_URL !== '')
+      ? import.meta.env.VITE_ML_API_URL.replace(/\/+$/, '')
+      : (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
-  // Mengambil informasi model dari endpoint /api/health. Galat diabaikan agar dashboard tetap jalan tanpa API.
   const fetchMlModelInfo = async () => {
     try {
       const res = await fetch(`${ML_API}/api/health`);
-      if (res.ok) setMlModelInfo(await res.json());
-    } catch { /* API not running */ }
+      if (res.ok) {
+        const healthData = await res.json();
+        setMlModelInfo(healthData);
+        if (healthData.model_loaded) {
+          try {
+            const infoRes = await fetch(`${ML_API}/api/model/info`);
+            if (infoRes.ok) {
+              setMlModelMetadata(await infoRes.json());
+            }
+          } catch {
+            /* ignore metadata fetch error */
+          }
+        }
+      } else {
+        setMlModelInfo(null);
+      }
+    } catch {
+      setMlModelInfo(null);
+    }
   };
 
-  // Memuat info model sekali saat komponen pertama kali dipasang
   useEffect(() => {
     fetchMlModelInfo();
   }, []);
 
-  // Sisa dari pemilihan kelurahan lama; digantikan interaksi klik peta dan tidak dipanggil di mana pun
-  const handleKelurahanSelect = (val) => {
-    // REMOVED — replaced by map click interaction
+  /**
+   * Mencocokkan titik koordinat (lat, lng) ke salah satu dari 48 Kelurahan Kota Bekasi
+   * berdasarkan kelurahan_id dan mengisi nilai awal elev_mean dari fitur kelurahan tersebut.
+   */
+  const resolvePickedLocationToKelurahan = (latlng) => {
+    setMlPickedPoint(latlng);
+    setMlPickMode(false);
+    setMlResult(null);
+    setMlDerived(null);
+    setMlStatus('idle');
+    setMlErrorMessage('');
+
+    const matchedProps = findKotaBekasiKelurahanByPoint(latlng.lat, latlng.lng, kelurahanGeoJson48);
+    if (!matchedProps) {
+      setMlPickedKelurahan(null);
+      return;
+    }
+
+    const kelIdOrName = matchedProps.kelurahan_id || matchedProps.kelurahan || matchedProps.NAMOBJ;
+    const fullKelRecord =
+      findKelurahanByIdOrName(kelurahanFeaturesData, kelIdOrName, matchedProps.kecamatan || matchedProps.WADMKC) ||
+      matchedProps;
+    setMlPickedKelurahan(fullKelRecord);
+
+    const baseElev = Number(fullKelRecord?.features?.elev_mean ?? fullKelRecord?.elev_mean);
+    if (Number.isFinite(baseElev)) {
+      setMlForm((prev) => ({ ...prev, elev_mean: Number(baseElev.toFixed(2)) }));
+    }
   };
 
   /**
-   * Mengirim satu titik yang dipilih ke endpoint /api/predict, lalu menghitung
-   * rumah sakit terdekat, durasi genangan, dan saran evakuasi dari hasil prediksi.
-   * Status 'no-api' dipakai bila request gagal karena jaringan.
+   * Memilih kelurahan Kota Bekasi langsung dari dropdown pada panel ML berdasarkan kelurahan_id atau nama.
    */
-  const predictSingleArea = async () => {
-    if (!mlPickedPoint) return;
-    setMlStatus('loading');
+  const handleSelectKelurahanByName = (kelIdOrName) => {
     setMlResult(null);
     setMlDerived(null);
+    setMlStatus('idle');
+    setMlErrorMessage('');
+
+    if (!kelIdOrName) {
+      setMlPickedKelurahan(null);
+      setMlPickedPoint(null);
+      return;
+    }
+
+    const found = findKelurahanByIdOrName(kelurahanFeaturesData, kelIdOrName);
+    if (!found) return;
+
+    setMlPickedKelurahan(found);
+    if (Number.isFinite(found.centroid_lat) && Number.isFinite(found.centroid_lng)) {
+      setMlPickedPoint({ lat: found.centroid_lat, lng: found.centroid_lng });
+      setMapCenter([found.centroid_lat, found.centroid_lng]);
+    }
+    const baseElev = Number(found?.features?.elev_mean ?? found?.elev_mean);
+    if (Number.isFinite(baseElev)) {
+      setMlForm((prev) => ({ ...prev, elev_mean: Number(baseElev.toFixed(2)) }));
+    }
+  };
+
+  /**
+   * Mengirim 9 fitur kelurahan terpilih di Kota Bekasi ke endpoint /api/predict.
+   * Menolak pengiriman apabila lokasi berada di luar 48 Kelurahan Kota Bekasi atau fitur tidak lengkap.
+   */
+  const predictSingleArea = async () => {
+    if (!mlPickedPoint || !mlPickedKelurahan) {
+      setMlStatus('error');
+      setMlErrorMessage(ML_ERROR_MESSAGES.NO_RESULT);
+      return;
+    }
+
+    const payload = buildMlPayload({
+      kelurahanProps: mlPickedKelurahan,
+      mlForm,
+      overrideElevation: true,
+    });
+
+    if (!payload) {
+      setMlStatus('error');
+      setMlErrorMessage(ML_ERROR_MESSAGES.INCOMPLETE_FEATURES);
+      return;
+    }
+
+    setMlStatus('loading');
+    setMlErrorMessage('');
+    setMlResult(null);
+    setMlDerived(null);
+
     try {
       const lat = mlPickedPoint.lat;
       const lon = mlPickedPoint.lng;
-      const payload = buildMlPayload({
-        lat,
-        lon,
-        mlForm,
-      });
       const res = await fetch(`${ML_API}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const resultData = await res.json();
-      setMlResult(resultData);
-      // Hitung turunan hasil: rumah sakit terdekat, durasi genangan, dan saran evakuasi
+      const resultData = await res.json().catch(() => null);
+      if (!res.ok) {
+        const errMsg = resultData?.error || ML_ERROR_MESSAGES.PREDICTION_FAILED;
+        if (res.status === 503) {
+          setMlErrorMessage(ML_ERROR_MESSAGES.SERVICE_UNAVAILABLE);
+          setMlStatus('error');
+          return;
+        }
+        throw new Error(errMsg);
+      }
+      const predictionObj = resultData?.prediction || resultData;
+      const enrichedPrediction = {
+        ...resultData,
+        ...predictionObj,
+        kelurahan_id:
+          predictionObj?.kelurahan_id ||
+          payload.kelurahan_id ||
+          normalizeKelurahanId(mlPickedKelurahan?.kelurahan),
+        kelurahan_name:
+          predictionObj?.kelurahan_name ||
+          predictionObj?.kelurahan ||
+          mlPickedKelurahan?.kelurahan,
+        kelurahan:
+          predictionObj?.kelurahan ||
+          predictionObj?.kelurahan_name ||
+          mlPickedKelurahan?.kelurahan,
+        kecamatan:
+          predictionObj?.kecamatan ||
+          mlPickedKelurahan?.kecamatan,
+      };
+      setMlResult(enrichedPrediction);
       const hospital = getNearestHospital(lat, lon, hospitalData);
-      const duration = getFloodDuration(resultData.predicted_class, mlForm.elev_mean);
-      const advice   = getEvacuationAdvice(resultData.predicted_class);
+      const duration = getFloodDuration(enrichedPrediction.predicted_class, payload.elev_mean);
+      const advice = getEvacuationAdvice(enrichedPrediction.predicted_class);
       setMlDerived({ hospital, duration, advice });
       setMlStatus('done');
       setShowMlLayer(true);
     } catch (e) {
-      setMlStatus(e.message.includes('Failed to fetch') ? 'no-api' : 'error');
+      if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
+        setMlErrorMessage(ML_ERROR_MESSAGES.SERVICE_UNAVAILABLE);
+        setMlStatus('no-api');
+      } else {
+        setMlErrorMessage(e.message || ML_ERROR_MESSAGES.PREDICTION_FAILED);
+        setMlStatus('error');
+      }
     }
   };
 
@@ -838,70 +945,93 @@ const MapDashboard = ({ onBack }) => {
     setMlResult(null);
     setMlDerived(null);
     setMlStatus('idle');
+    setMlErrorMessage('');
   };
 
   const handleMlClearPickedPoint = () => {
     setMlPickedPoint(null);
+    setMlPickedKelurahan(null);
     setMlResult(null);
     setMlDerived(null);
     setMlStatus('idle');
+    setMlErrorMessage('');
   };
 
   const handleMlFormChange = (patch) => {
     setMlForm((form) => ({ ...form, ...patch }));
+    setMlResult(null);
+    setMlDerived(null);
+    setMlStatus('idle');
+    setMlErrorMessage('');
   };
 
-  /**
-   * Menghitung estimasi risiko secara lokal tanpa memanggil API ML, memakai buildOfflineRiskEstimate.
-   * Hasilnya diolah dengan alur turunan yang sama seperti predictSingleArea.
-   */
-  const predictSingleAreaOffline = () => {
-    if (!mlPickedPoint) return;
-
-    const lat = mlPickedPoint.lat;
-    const lon = mlPickedPoint.lng;
-    const payload = buildMlPayload({
-      lat,
-      lon,
-      mlForm,
-    });
-
-    const resultData = buildOfflineRiskEstimate(payload);
-    setMlResult(resultData);
-
-    const hospital = getNearestHospital(lat, lon, hospitalData);
-    const duration = getFloodDuration(resultData.predicted_class, mlForm.elev_mean);
-    const advice = getEvacuationAdvice(resultData.predicted_class);
-    setMlDerived({ hospital, duration, advice });
-    setMlStatus('done');
-    setShowMlLayer(true);
+  const handleMlBatchScopeChange = (newScope) => {
+    setMlBatchScope(newScope);
+    setMlBatchResults([]);
+    setMlBatchSummary(null);
+    setMlBatchStatus('idle');
+    setMlBatchErrorMessage('');
   };
 
+  // Daftar kelurahan Kota Bekasi yang sesuai filter pencarian dan tingkat keparahan saat ini
+  const filteredKelurahanList = kelurahanFeaturesData.filter((kel) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      kel.kelurahan.toLowerCase().includes(q) ||
+      kel.kecamatan.toLowerCase().includes(q);
+    const matchSev =
+      filterSeverity === 'all' ||
+      (kel.severity_max_raw && kel.severity_max_raw === filterSeverity);
+    return matchSearch && matchSev;
+  });
+
   /**
-   * Mengirim seluruh titik (sesuai mlBatchScope) ke endpoint /api/predict/batch.
-   * Hasil dicocokkan kembali ke titik asal berdasarkan indeks, lalu diberi skor prioritas,
-   * diurutkan, dan dihitung ringkasannya per kelas risiko.
+   * Menjalankan Batch Prediction pada unit analisis Kelurahan di Kota Bekasi (48 Kelurahan)
+   * ke endpoint POST /api/predict/batch. Setiap kelurahan mengirimkan 9 fitur spasial dan
+   * topografi aktualnya masing-masing (bukan nilai konstanta yang sama) serta kelurahan_id unik.
    */
   const predictBatchAreas = async () => {
     setMlBatchStatus('loading');
+    setMlBatchErrorMessage('');
     setMlBatchResults([]);
     setMlBatchSummary(null);
 
-    const targetPoints = mlBatchScope === 'all' ? floodPoints : filteredFloodPoints;
-    if (!targetPoints.length) {
+    let targetKelurahan = kelurahanFeaturesData;
+    if (mlBatchScope === 'labeled') {
+      targetKelurahan = kelurahanFeaturesData.filter((k) => k.has_flood_label);
+    } else if (mlBatchScope === 'filtered') {
+      targetKelurahan = filteredKelurahanList;
+    }
+
+    if (!targetKelurahan.length) {
+      setMlBatchErrorMessage(ML_ERROR_MESSAGES.NO_RESULT);
       setMlBatchStatus('error');
       return;
     }
 
-    const features = targetPoints.map((point) => ({
-      kelurahan: point.nama_kecamatan || point.kecamatan,
-      kecamatan: point.kecamatan,
-      ...buildMlPayload({
-        lat: point.lat,
-        lon: point.lng,
-        mlForm,
-      }),
-    }));
+    const features = targetKelurahan.map((kel) => {
+      const kelId = kel.kelurahan_id || normalizeKelurahanId(kel.kelurahan);
+      const built = buildMlPayload({
+        kelurahanProps: kel,
+        overrideElevation: false,
+      });
+      if (!built) {
+        return {
+          id: kelId,
+          kelurahan_id: kelId,
+          kelurahan: kel.kelurahan,
+          kelurahan_name: kel.kelurahan,
+          kecamatan: kel.kecamatan,
+          wadmkk: kel.wadmkk || 'Kota Bekasi',
+        };
+      }
+      return {
+        id: kelId,
+        kelurahan_id: kelId,
+        ...built,
+      };
+    });
 
     try {
       const response = await fetch(`${ML_API}/api/predict/batch`, {
@@ -910,80 +1040,51 @@ const MapDashboard = ({ onBack }) => {
         body: JSON.stringify({ features }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(data?.error || `HTTP ${response.status}`);
+        throw new Error(data?.error || ML_ERROR_MESSAGES.PREDICTION_FAILED);
       }
 
-      const enrichedResults = (data.results || []).map((row) => {
-        const sourcePoint = targetPoints[row.index] || {};
-        const lat = Number(sourcePoint.lat ?? row.lat);
-        const lng = Number(sourcePoint.lng ?? sourcePoint.lon ?? row.lng ?? row.lon);
-        // Skor prioritas gabungan: 65% risk_score, 20% confidence, 15% jumlah titik. Baris gagal diberi skor 0.
-        const priorityScore = row.success
-          ? ((row.risk_score || 0) * 0.65) + ((row.confidence || 0) * 0.2) + ((sourcePoint.jumlah_titik || 0) * 0.15)
-          : 0;
+      const enrichedResults = enrichAndDeduplicateBatchResults(data.results || [], targetKelurahan);
+      const batchSummary = summarizeBatchResults(enrichedResults);
 
-        return {
-          ...row,
-          lat,
-          lng,
-          jumlah_titik: sourcePoint.jumlah_titik || 0,
-          nama_kecamatan: sourcePoint.nama_kecamatan || sourcePoint.kecamatan || row.kecamatan || row.kelurahan || '-',
-          priority_score: Number(priorityScore.toFixed(2)),
-        };
-      });
-
-      const sortedResults = enrichedResults.slice().sort((a, b) => {
-        if (!!a.success !== !!b.success) return a.success ? -1 : 1;
-        return (b.priority_score || 0) - (a.priority_score || 0);
-      });
-
-      const successRows = sortedResults.filter(r => r.success);
-      const highCount = successRows.filter(r => r.predicted_class === 'tinggi').length;
-      const mediumCount = successRows.filter(r => r.predicted_class === 'sedang').length;
-      const lowCount = successRows.filter(r => r.predicted_class === 'rendah').length;
-      const avgRiskScore = successRows.length
-        ? (successRows.reduce((sum, row) => sum + (row.risk_score || 0), 0) / successRows.length).toFixed(1)
-        : '0.0';
-
-      setMlBatchResults(sortedResults);
-      setMlBatchSummary({
-        total: sortedResults.length,
-        success: successRows.length,
-        failed: sortedResults.length - successRows.length,
-        high: highCount,
-        medium: mediumCount,
-        low: lowCount,
-        avgRiskScore,
-      });
+      setMlBatchResults(enrichedResults);
+      setMlBatchSummary(batchSummary);
       setMlBatchStatus('done');
       setActiveLayers(p => ({ ...p, mlBatchRisk: true }));
     } catch (e) {
-      setMlBatchStatus(e.message.includes('Failed to fetch') ? 'no-api' : 'error');
+      if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
+        setMlBatchErrorMessage(ML_ERROR_MESSAGES.SERVICE_UNAVAILABLE);
+        setMlBatchStatus('no-api');
+      } else {
+        setMlBatchErrorMessage(e.message || ML_ERROR_MESSAGES.PREDICTION_FAILED);
+        setMlBatchStatus('error');
+      }
     }
   };
 
-  // Masuk atau keluar mode layar penuh pada elemen dokumen. Status fullscreen diatur manual, tidak dibaca dari event.
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); setFullscreen(true); }
     else { document.exitFullscreen(); setFullscreen(false); }
   };
 
-  // Titik banjir yang lolos filter keparahan dan pencarian kecamatan (tanpa membedakan huruf besar)
   const filteredFloodPoints = floodPoints.filter(p => {
     const matchSev = filterSeverity === 'all' || p.severity === filterSeverity;
-    const matchSearch = p.kecamatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        (p.nama_kecamatan || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchSearch =
+      p.kecamatan.toLowerCase().includes(q) ||
+      (p.nama_kecamatan || '').toLowerCase().includes(q) ||
+      (p.kelurahan_spasial || '').toLowerCase().includes(q) ||
+      (p.kecamatan_spasial || '').toLowerCase().includes(q);
     return matchSev && matchSearch;
   });
 
-  // Hasil batch ML yang berhasil, difilter per kelas, lalu diurutkan sesuai mlBatchSortBy. Dipakai panel ML, peta, dan ekspor.
+  // Hasil batch ML difilter per kelas, lalu diurutkan sesuai mlBatchSortBy (item gagal tetap ditampilkan jika filter 'all')
   const sortedBatchResults = mlBatchResults
-    .filter(row => row.success)
-    .filter(row => mlBatchRiskFilter === 'all' || row.predicted_class === mlBatchRiskFilter)
+    .filter(row => mlBatchRiskFilter === 'all' || (row.success && row.predicted_class === mlBatchRiskFilter))
     .slice()
     .sort((a, b) => {
+      if (!!a.success !== !!b.success) return a.success ? -1 : 1;
       if (mlBatchSortBy === 'risk_score') return (b.risk_score || 0) - (a.risk_score || 0);
       if (mlBatchSortBy === 'confidence') return (b.confidence || 0) - (a.confidence || 0);
       if (mlBatchSortBy === 'jumlah_titik') return (b.jumlah_titik || 0) - (a.jumlah_titik || 0);
@@ -1062,21 +1163,27 @@ const MapDashboard = ({ onBack }) => {
   const onEachFloodRiskFeature = (feature, layer) => {
     const p = feature.properties || {};
     const rc = getRiskClass(feature);
-    const rcLabel = { tinggi: 'TINGGI', sedang: 'SEDANG', rendah: 'RENDAH' }[rc] || 'TIDAK DIKETAHUI';
-    
+    const rcLabel = { tinggi: 'TINGGI', sedang: 'SEDANG', rendah: 'RENDAH' }[rc] || 'BELUM MEMILIKI CATATAN TITIK BANJIR';
+    const kelName = p.NAMOBJ || p.kelurahan || '-';
+    const kecName = p.WADMKC || p.kecamatan || '-';
+    const kotaName = p.WADMKK || 'Kota Bekasi';
+    const titikVal = p.jumlah_titik !== null && p.jumlah_titik !== undefined ? `${p.jumlah_titik} titik` : 'Tidak tercatat';
+
     const riskDesc = {
-      tinggi: 'Risiko Tinggi - Kemungkinan banjir tinggi, perlu kewaspadaan maksimal',
-      sedang: 'Risiko Sedang - Kemungkinan banjir sedang, perlu kewaspadaan',
-      rendah: 'Risiko Rendah - Kemungkinan banjir rendah'
+      tinggi: 'Delineasi Historis Tinggi (≥ 20 titik banjir tercatat)',
+      sedang: 'Delineasi Historis Sedang (12–19 titik banjir tercatat)',
+      rendah: 'Delineasi Historis Rendah (< 12 titik banjir tercatat)'
     };
 
     layer.bindPopup(`
       <div class="custom-popup">
-        <h4>🌊 Risiko Banjir Genangan</h4>
-        <p><strong>Klasifikasi: ${rcLabel}</strong></p>
-        <p style="margin: 8px 0; font-size: 0.9em;">${riskDesc[rc] || 'Data risiko banjir'}</p>
-        <p style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 0.85em;">
-          <strong>Sumber:</strong> ${p.Catatan || 'BPBD Provinsi Jawa Barat'}
+        <h4>🌊 Delineasi Risiko Historis Kelurahan</h4>
+        <p><strong>Kelurahan:</strong> ${kelName} (${kecName}, ${kotaName})</p>
+        <p><strong>Kategori Historis: ${rcLabel}</strong></p>
+        <p><strong>Jumlah Titik Tercatat:</strong> ${titikVal}</p>
+        <p style="margin: 8px 0; font-size: 0.85em;">${riskDesc[rc] || 'Kelurahan belum memiliki catatan titik banjir pada dataset historis'}</p>
+        <p style="margin-top: 10px; padding-top: 6px; border-top: 1px solid #e5e7eb; font-size: 0.78em; color: #475569;">
+          <strong>Catatan Metodologis:</strong> Layer ini adalah delineasi data historis eksternal (bukan hasil prediksi model Random Forest).
         </p>
       </div>
     `);
@@ -1156,8 +1263,6 @@ const MapDashboard = ({ onBack }) => {
   const floodRiskAreaCount = (floodRiskData && floodRiskData.features && floodRiskData.features.length)
     ? floodRiskData.features.length
     : new Set(floodData.map(i => i.kecamatan)).size;
-  // Dihitung saat render dan tidak diperbarui otomatis ketika ukuran layar berubah (tanpa listener resize)
-  const isMobileViewport = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   // Daftar tab untuk navigasi bawah di mobile (sama dengan tab di header desktop)
   const mobileNavItems = [
     { tab: 'overview', label: 'Overview', icon: <Activity size={18} /> },
@@ -1216,10 +1321,19 @@ const MapDashboard = ({ onBack }) => {
             ))}
           </nav>
           <div className="header-right">
-            <div className="search-box">
+            <div className={`search-box ${isSearchVisible ? 'is-open' : ''}`}>
               <Search size={20} />
-              <input type="text" placeholder="Cari kecamatan..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Cari kecamatan..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape' && isMobileViewport) closeMobileSearch(); }}
+              />
+              <button type="button" className="search-close-btn" onClick={closeMobileSearch} title="Tutup pencarian" aria-label="Tutup pencarian"><X size={16} /></button>
             </div>
+            <button type="button" className="icon-btn search-toggle-btn" onClick={toggleMobileSearch} title="Cari kecamatan" aria-label="Cari kecamatan" aria-expanded={isSearchVisible}><Search size={20} /></button>
             <button className="icon-btn" onClick={toggleDarkMode} title="Toggle Dark Mode">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
             <button className="icon-btn" onClick={toggleFullscreen} title="Fullscreen">{fullscreen ? <Minimize2 size={20}/> : <Maximize2 size={20}/>}</button>
             <button className="menu-btn" onClick={handleMenuToggle}>{sidebarOpen ? <X size={24}/> : <Menu size={23}/>}</button>
@@ -1287,7 +1401,7 @@ const MapDashboard = ({ onBack }) => {
                     <div className="stat-content">
                       <span className="stat-value">{drainageData?.features?.length || 0}</span>
                       <span className="stat-label">Sungai Utama</span>
-                      <span className="stat-change">Data OSM</span>
+                      <span className="stat-change">BIG 1:25.000 (SUNGAI_LN_25K)</span>
                     </div>
                   </div>
                   <div className="stat-card gradient-green">
@@ -1302,8 +1416,8 @@ const MapDashboard = ({ onBack }) => {
                     <div className="stat-icon"><Layers size={20}/></div>
                     <div className="stat-content">
                       <span className="stat-value">{floodRiskAreaCount}</span>
-                      <span className="stat-label">Peta Tingkat Risiko Banjir per Kelurahan</span>
-                      <span className="stat-change">{floodRiskAreaCount} area kelurahan</span>
+                      <span className="stat-label">Delineasi Risiko Historis Kelurahan</span>
+                      <span className="stat-change">{floodRiskAreaCount} kelurahan Kota Bekasi</span>
                     </div>
                   </div>
                   <div className="stat-card gradient-purple">
@@ -1459,9 +1573,9 @@ const MapDashboard = ({ onBack }) => {
 
                 <div className="legend-section glass-effect">
                   <h4>Legenda</h4>
-                  <div className="legend-group-label">Tingkat Risiko Banjir per Kelurahan</div>
+                  <div className="legend-group-label">Delineasi Risiko Historis (Eksternal / Non-ML)</div>
                   <div className="legend-items">
-                    {[['#DC2626','Tinggi','≥20 titik banjir'],['#F59E0B','Sedang','12–19 titik banjir'],['#16A34A','Rendah','<12 titik banjir']].map(([c,n,d])=>(
+                    {[['#DC2626','Tinggi','≥20 titik banjir tercatat'],['#F59E0B','Sedang','12–19 titik banjir tercatat'],['#16A34A','Rendah','<12 titik banjir tercatat']].map(([c,n,d])=>(
                       <div key={n} className="legend-item">
                         <span className="legend-color" style={{backgroundColor:c}}></span>
                         <div className="legend-text"><strong>{n}</strong><span>{d}</span></div>
@@ -1472,7 +1586,7 @@ const MapDashboard = ({ onBack }) => {
                   <div className="legend-items">
                     <div className="legend-item">
                       <span className="legend-line" style={{backgroundColor:'#38bdf8'}}></span>
-                      <div className="legend-text"><strong>Sungai Utama</strong><span>OpenStreetMap</span></div>
+                      <div className="legend-text"><strong>Sungai Utama</strong><span>BIG 1:25.000 (SUNGAI_LN_25K)</span></div>
                     </div>
                     <div className="legend-item">
                       <svg style={{width:'20px',height:'20px',flexShrink:0}} viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
@@ -1496,13 +1610,14 @@ const MapDashboard = ({ onBack }) => {
                 analysisResults={analysisResults}
                 selectedAnalysis={selectedAnalysis}
                 priorityAreas={priorityAreas}
+                priorityBufferUsed={priorityBufferUsed}
                 exportPriorityAreasCsv={exportPriorityAreasCsv}
                 exportPrioritySummary={exportPrioritySummary}
                 kecamatanData={kecamatanData}
                 darkMode={darkMode}
                 renderPieLabel={renderPieLabel}
                 bufferRadius={bufferRadius}
-                setBufferRadius={setBufferRadius}
+                setBufferRadius={handleBufferRadiusChange}
                 performBufferAnalysis={performBufferAnalysis}
                 performProximityAnalysis={performProximityAnalysis}
                 identifyPriorityAreas={identifyPriorityAreas}
@@ -1533,21 +1648,27 @@ const MapDashboard = ({ onBack }) => {
             {/* AI / ML */}
             {activeTab === 'ai' && (
               <MlAnalysisPanel
+                darkMode={darkMode}
                 mlModelInfo={mlModelInfo}
+                mlModelMetadata={mlModelMetadata}
                 mlPickMode={mlPickMode}
                 onTogglePickMode={handleMlTogglePickMode}
                 mlPickedPoint={mlPickedPoint}
+                mlPickedKelurahan={mlPickedKelurahan}
+                kelurahanList={kelurahanFeaturesData}
+                onSelectKelurahanByName={handleSelectKelurahanByName}
                 onClearPickedPoint={handleMlClearPickedPoint}
                 mlForm={mlForm}
                 onMlFormChange={handleMlFormChange}
                 mlStatus={mlStatus}
+                mlErrorMessage={mlErrorMessage}
                 onAnalyzeSingle={predictSingleArea}
-                onAnalyzeSingleOffline={predictSingleAreaOffline}
                 mlResult={mlResult}
                 mlDerived={mlDerived}
                 mlBatchScope={mlBatchScope}
-                onMlBatchScopeChange={setMlBatchScope}
+                onMlBatchScopeChange={handleMlBatchScopeChange}
                 mlBatchStatus={mlBatchStatus}
+                mlBatchErrorMessage={mlBatchErrorMessage}
                 onAnalyzeBatch={predictBatchAreas}
                 mlBatchRiskFilter={mlBatchRiskFilter}
                 onMlBatchRiskFilterChange={setMlBatchRiskFilter}
@@ -1557,6 +1678,9 @@ const MapDashboard = ({ onBack }) => {
                 sortedBatchResults={sortedBatchResults}
                 filteredFloodPointsLength={filteredFloodPoints.length}
                 floodPointsLength={floodPoints.length}
+                filteredKelurahanCount={filteredKelurahanList.length}
+                labeledKelurahanCount={kelurahanFeaturesData.filter(k => k.has_flood_label).length}
+                totalKelurahanCount={kelurahanFeaturesData.length}
                 onExportBatchResultsCsv={exportBatchResultsCsv}
                 onExportBatchSummary={exportBatchSummary}
               />
@@ -1576,11 +1700,7 @@ const MapDashboard = ({ onBack }) => {
             <MapClickHandler
               active={mlPickMode}
               onPick={(latlng) => {
-                setMlPickedPoint(latlng);
-                setMlPickMode(false);
-                setMlResult(null);
-                setMlDerived(null);
-                setMlStatus('idle');
+                resolvePickedLocationToKelurahan(latlng);
               }}
             />
 
@@ -1614,11 +1734,14 @@ const MapDashboard = ({ onBack }) => {
                 data={drainageData}
                 style={drainageStyle}
                 onEachFeature={(f, l) => {
+                  const p = f.properties || {};
                   l.bindPopup(`
                     <div class="custom-popup">
                       <h4>🌊 Sungai Utama</h4>
-                      <p><strong>Tipe:</strong> ${f.properties.waterway||'drain'}</p>
-                      <p style="margin-top: 8px; font-size: 0.85em;"><strong>Sumber:</strong> OpenStreetMap</p>
+                      <p><strong>Nama:</strong> ${p.NAMOBJ || p.name || 'Alur Sungai'}</p>
+                      <p><strong>Keterangan:</strong> ${p.REMARK || p.waterway || 'Sungai'}</p>
+                      <p><strong>Geometri:</strong> ${f.geometry?.type || 'LineString'}</p>
+                      <p style="margin-top: 8px; font-size: 0.85em;"><strong>Sumber:</strong> BIG 1:25.000 (SUNGAI_LN_25K)</p>
                     </div>
                   `);
                 }}
@@ -1663,14 +1786,16 @@ const MapDashboard = ({ onBack }) => {
                 icon={createMarkerIcon(point.severity, selectedPoint?.id === point.id)}
                 eventHandlers={{ click: () => setSelectedPoint(point) }}
               >
-                <Popup className="custom-popup" maxWidth={260} minWidth={240} autoPan>
+                <Popup className="custom-popup" maxWidth={280} minWidth={240} autoPan>
                   <div className="popup-content">
                     <h4 style={{display:'flex',alignItems:'center',gap:'.4rem'}}>
                       <img src={mapFlagIcon} alt="" style={{width:'15px',height:'15px',objectFit:'contain'}} />
-                      Titik Rawan Banjir
+                      Titik Rawan Banjir (#{point.id})
                     </h4>
-                    <div className="popup-title">{point.nama_kecamatan||point.kecamatan||'-'}</div>
-                    <div className="popup-subtitle">Kecamatan</div>
+                    <div className="popup-title">
+                      {point.kelurahan_spasial ? `${point.kelurahan_spasial} — ${point.kecamatan_spasial || point.nama_kecamatan}` : (point.nama_kecamatan||point.kecamatan||'-')}
+                    </div>
+                    <div className="popup-subtitle">Kelurahan / Kecamatan (Spatial Join)</div>
                     <div className="popup-stats">
                       <div className="popup-stat">
                         <span className="popup-label">Jumlah titik</span>
@@ -1686,6 +1811,11 @@ const MapDashboard = ({ onBack }) => {
                           {point.severity==='high'?'Tinggi':point.severity==='medium'?'Sedang':'Rendah'}
                         </span>
                       </div>
+                      {point.perlu_diperiksa && (
+                        <div style={{marginTop:'.35rem', padding:'.3rem .45rem', background:'#fef3c7', border:'1px solid #f59e0b', borderRadius:'6px', fontSize:'.68rem', color:'#92400e'}}>
+                          ⚠️ <strong>Perlu Diperiksa:</strong> Atribut sumber ({point.kecamatan_sumber}) ≠ Polygon spasial ({point.kecamatan_spasial})
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Popup>
@@ -1694,10 +1824,10 @@ const MapDashboard = ({ onBack }) => {
 
             {/* ── Buffer circles */}
             {activeLayers.bufferZones && selectedAnalysis==='buffer' && analysisResults?.map(p=>(
-              <Circle key={`buf-${p.id}`} center={[p.lat,p.lng]} radius={bufferRadius}
+              <Circle key={`buf-${p.id}`} center={[p.lat,p.lng]} radius={p.bufferRadiusUsed || bufferRadius}
                 pathOptions={{color:p.coverage==='Terlayani'?'#10b981':'#ef4444',fillColor:p.coverage==='Terlayani'?'#10b981':'#ef4444',fillOpacity:.08,weight:1.5,opacity:.5,dashArray:'6 3'}}
               >
-                <Popup><div className="popup-content"><h4>Buffer Zone</h4><p><b>Area:</b> {p.nama_kecamatan||p.kecamatan}</p><p><b>Radius:</b> {bufferRadius}m</p><p><b>Sungai Utama:</b> {p.drainageInBuffer}</p><p><b>Status:</b> {p.coverage}</p></div></Popup>
+                <Popup><div className="popup-content"><h4>Buffer Zone (EPSG:32748)</h4><p><b>Area:</b> {p.kelurahan_spasial ? `${p.kelurahan_spasial} (${p.kecamatan_spasial})` : (p.nama_kecamatan||p.kecamatan)}</p><p><b>Radius Buffer:</b> {p.bufferRadiusUsed || bufferRadius}m</p><p><b>Segmen Sungai Terdekat:</b> {p.nearestDrainage?.distance ?? p.nearestRiverDistance ?? '-'}m {p.nearestDrainage?.type ? `(${p.nearestDrainage.type})` : ''}</p><p><b>Sungai dalam Buffer:</b> {p.drainageInBuffer}</p><p><b>Status:</b> {p.coverage}</p></div></Popup>
               </Circle>
             ))}
 
@@ -1707,7 +1837,7 @@ const MapDashboard = ({ onBack }) => {
                 positions={[[p.lat,p.lng],[p.nearestDrainage.coords.lat,p.nearestDrainage.coords.lng]]}
                 pathOptions={{color:getProximityLineColor(p.proximityScore),weight:2,opacity:.65,dashArray:p.proximityScore==='Baik'?'0':'4 6'}}
               >
-                <Popup><div className="popup-content"><p><b>Area:</b> {p.nama_kecamatan||p.kecamatan}</p><p><b>Jarak:</b> {p.nearestDrainage.distance}m</p><p><b>Skor:</b> {p.proximityScore}</p></div></Popup>
+                <Popup><div className="popup-content"><h4>Jarak Titik Banjir ke Sungai (EPSG:32748)</h4><p><b>Area:</b> {p.kelurahan_spasial ? `${p.kelurahan_spasial} (${p.kecamatan_spasial})` : (p.nama_kecamatan||p.kecamatan)}</p><p><b>Sungai Terdekat:</b> {p.nearestDrainage.type || '-'} ({p.nearestDrainage.geometryType || '-'})</p><p><b>Jarak Segmen:</b> {p.nearestDrainage.distance}m ({p.nearestDrainage.accessibility || '-'})</p><p><b>Skor Kedekatan:</b> {p.proximityScore}</p></div></Popup>
               </Polyline>
             ))}
 
@@ -1767,11 +1897,157 @@ const MapDashboard = ({ onBack }) => {
               );
             })}
 
+            {/* ── Poligon Kelurahan Hasil Batch Prediksi Random Forest berbasis kelurahan_id */}
+            {kelurahanGeoJson48?.features?.length > 0 && activeLayers.mlBatchRisk && mlBatchStatus === 'done' && sortedBatchResults.length > 0 && (() => {
+              const batchPredictedMap = new Map();
+              for (const row of sortedBatchResults) {
+                if (!row?.success || (row.predicted_class !== 'tinggi' && row.predicted_class !== 'sedang')) continue;
+                const kid = normalizeKelurahanId(row.kelurahan_id || row.id || row.kelurahan);
+                if (kid) {
+                  batchPredictedMap.set(kid, {
+                    ...row,
+                    kelurahan_id: kid,
+                  });
+                }
+              }
+
+              if (batchPredictedMap.size === 0) return null;
+
+              const batchFeatures = kelurahanGeoJson48.features.filter((feat) => {
+                const featKid = normalizeKelurahanId(
+                  feat.properties?.kelurahan_id || feat.properties?.kelurahan || feat.properties?.NAMOBJ
+                );
+                return featKid && batchPredictedMap.has(featKid);
+              });
+
+              if (!batchFeatures.length) return null;
+
+              const batchKey = `ml-batch-polys-${Array.from(batchPredictedMap.entries()).map(([k, v]) => `${k}:${v.predicted_class}:${v.risk_score}`).join('|')}`;
+
+              return (
+                <GeoJSON
+                  key={batchKey}
+                  data={{ type: 'FeatureCollection', features: batchFeatures }}
+                  style={(feature) => {
+                    const featKid = normalizeKelurahanId(
+                      feature.properties?.kelurahan_id || feature.properties?.kelurahan || feature.properties?.NAMOBJ
+                    );
+                    const pred = batchPredictedMap.get(featKid);
+                    const col = classColor(pred?.predicted_class);
+                    return {
+                      color: col,
+                      fillColor: col,
+                      fillOpacity: 0.38,
+                      weight: 2,
+                      dashArray: '4,2',
+                    };
+                  }}
+                  onEachFeature={(feature, layer) => {
+                    const props = feature.properties || {};
+                    const featKid = normalizeKelurahanId(
+                      props.kelurahan_id || props.kelurahan || props.NAMOBJ
+                    );
+                    const pred = batchPredictedMap.get(featKid);
+                    if (!pred) return;
+                    const col = classColor(pred.predicted_class);
+                    const probs = formatModelProbabilities(pred.probabilities);
+                    const kelName = pred.kelurahan_name || pred.kelurahan || props.kelurahan || props.NAMOBJ || '-';
+                    const kecName = pred.kecamatan || props.kecamatan || props.WADMKC || '-';
+                    const hasLabel = pred.has_flood_label ?? props.has_flood_label;
+                    const labelInfo = hasLabel
+                      ? `Berlabel Historis (${pred.jumlah_titik ?? props.jumlah_titik_akumulasi ?? 0} titik)`
+                      : 'Tanpa Titik Banjir Historis (15 Kelurahan Tidak Berlabel)';
+                    layer.bindPopup(`
+                      <div class="custom-popup">
+                        <h4>Prediksi Batch Random Forest Kelurahan</h4>
+                        <p><strong>Kelurahan:</strong> ${kelName} <code style="font-size:0.78em;color:#64748b">(${featKid})</code></p>
+                        <p><strong>Kecamatan:</strong> ${kecName} (Kota Bekasi)</p>
+                        <p><strong>Kelas Prediksi:</strong> <span style="color:${col};font-weight:700;text-transform:capitalize">${pred.predicted_class}</span></p>
+                        <p><strong>Probabilitas keluaran model:</strong> Sedang ${probs.sedangPct}% • Tinggi ${probs.tinggiPct}%</p>
+                        <p><strong>Indeks Turunan (60–100):</strong> ${pred.risk_score ?? '-'}/100 <span style="font-size:0.75em;color:#64748b">(turunan 60×P(sedang)+100×P(tinggi))</span></p>
+                        <p><strong>Data Historis:</strong> ${labelInfo}</p>
+                        <p style="margin-top:6px;padding:4px 6px;border-radius:5px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:0.78em;font-weight:700">
+                          ${ML_VALIDATION_STATUS_UPPER}
+                        </p>
+                        <p style="margin-top:4px;font-size:0.74em;color:#64748b;line-height:1.35">
+                          ${ML_VALIDATION_NOTE}
+                        </p>
+                      </div>
+                    `);
+                  }}
+                />
+              );
+            })()}
+
+            {/* ── Poligon Kelurahan Hasil Single Prediksi Random Forest berbasis kelurahan_id */}
+            {kelurahanGeoJson48?.features?.length > 0 && showMlLayer && mlStatus === 'done' && mlResult && (mlResult.predicted_class === 'tinggi' || mlResult.predicted_class === 'sedang') && (() => {
+              const singleKid = normalizeKelurahanId(
+                mlResult.kelurahan_id ||
+                  mlPickedKelurahan?.kelurahan_id ||
+                  mlResult.kelurahan ||
+                  mlPickedKelurahan?.kelurahan
+              );
+              if (!singleKid) return null;
+
+              const singleFeatures = kelurahanGeoJson48.features.filter((feat) => {
+                const featKid = normalizeKelurahanId(
+                  feat.properties?.kelurahan_id || feat.properties?.kelurahan || feat.properties?.NAMOBJ
+                );
+                return featKid === singleKid;
+              });
+
+              if (!singleFeatures.length) return null;
+
+              const col = classColor(mlResult.predicted_class);
+              const probs = formatModelProbabilities(mlResult.probabilities);
+              const singleKey = `ml-single-poly-${singleKid}-${mlResult.predicted_class}-${mlResult.risk_score}`;
+
+              return (
+                <GeoJSON
+                  key={singleKey}
+                  data={{ type: 'FeatureCollection', features: singleFeatures }}
+                  style={() => ({
+                    color: col,
+                    fillColor: col,
+                    fillOpacity: 0.48,
+                    weight: 3,
+                  })}
+                  onEachFeature={(feature, layer) => {
+                    const props = feature.properties || {};
+                    const kelName = mlResult.kelurahan_name || mlResult.kelurahan || mlPickedKelurahan?.kelurahan || props.kelurahan || props.NAMOBJ || '-';
+                    const kecName = mlResult.kecamatan || mlPickedKelurahan?.kecamatan || props.kecamatan || props.WADMKC || '-';
+                    const hasLabel = mlPickedKelurahan?.has_flood_label ?? props.has_flood_label;
+                    const labelInfo = hasLabel
+                      ? `Berlabel Historis (${mlPickedKelurahan?.jumlah_titik_akumulasi ?? props.jumlah_titik_akumulasi ?? 0} titik)`
+                      : 'Tanpa Titik Banjir Historis (15 Kelurahan Tidak Berlabel)';
+                    layer.bindPopup(`
+                      <div class="custom-popup">
+                        <h4>Prediksi Single Random Forest Kelurahan</h4>
+                        <p><strong>Kelurahan:</strong> ${kelName} <code style="font-size:0.78em;color:#64748b">(${singleKid})</code></p>
+                        <p><strong>Kecamatan:</strong> ${kecName} (Kota Bekasi)</p>
+                        <p><strong>Kelas Prediksi:</strong> <span style="color:${col};font-weight:700;text-transform:capitalize">${mlResult.predicted_class}</span></p>
+                        <p><strong>Probabilitas keluaran model:</strong> Sedang ${probs.sedangPct}% • Tinggi ${probs.tinggiPct}%</p>
+                        <p><strong>Indeks Turunan (60–100):</strong> ${mlResult.risk_score ?? '-'}/100 <span style="font-size:0.75em;color:#64748b">(turunan 60×P(sedang)+100×P(tinggi))</span></p>
+                        <p><strong>Data Historis:</strong> ${labelInfo}</p>
+                        <p style="margin-top:6px;padding:4px 6px;border-radius:5px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:0.78em;font-weight:700">
+                          ${ML_VALIDATION_STATUS_UPPER}
+                        </p>
+                        <p style="margin-top:4px;font-size:0.74em;color:#64748b;line-height:1.35">
+                          ${ML_VALIDATION_NOTE}
+                        </p>
+                      </div>
+                    `);
+                  }}
+                />
+              );
+            })()}
+
             {/* ── ML picked location marker */}
             {mlPickedPoint && (() => {
               const mlColor = (cls) => cls === 'tinggi' ? '#dc2626' : cls === 'sedang' ? '#d97706' : '#16a34a';
               const cls = mlResult?.predicted_class;
               const markerColor = cls ? mlColor(cls) : '#0284c7';
+              const probs = cls ? formatModelProbabilities(mlResult?.probabilities) : null;
               return (
                 <CircleMarker
                   key={`ml-loc-${mlPickedPoint.lat}-${mlPickedPoint.lng}`}
@@ -1781,13 +2057,24 @@ const MapDashboard = ({ onBack }) => {
                 >
                   <Popup>
                     <div className="custom-popup">
-                      <h4>Lokasi Anda</h4>
+                      <h4>Lokasi Analisis Risiko</h4>
                       <p><b>Koordinat:</b> {mlPickedPoint.lat.toFixed(5)}, {mlPickedPoint.lng.toFixed(5)}</p>
+                      {mlPickedKelurahan ? (
+                        <p><b>Kelurahan:</b> {mlPickedKelurahan.kelurahan} ({mlPickedKelurahan.kecamatan}, Kota Bekasi) <code>{mlPickedKelurahan.kelurahan_id || ''}</code></p>
+                      ) : (
+                        <p style={{color:'#dc2626', fontSize:'.78rem'}}>Di luar 48 Kelurahan Kota Bekasi</p>
+                      )}
                       {cls && <>
-                        <p><b>Risiko Banjir:</b> <span style={{color: markerColor, fontWeight: 700, textTransform:'capitalize'}}>{cls}</span></p>
-                        <p><b>Skor:</b> {mlResult.risk_score}/100</p>
+                        <p><b>Kelas Prediksi:</b> <span style={{color: markerColor, fontWeight: 700, textTransform:'capitalize'}}>{cls}</span></p>
+                        {probs && (
+                          <p><b>Probabilitas keluaran model:</b> Sedang {probs.sedangPct}% • Tinggi {probs.tinggiPct}%</p>
+                        )}
+                        <p><b>Indeks Turunan (60–100):</b> {mlResult.risk_score}/100</p>
+                        <p style={{color:'#92400e', fontSize:'.72rem', fontWeight: 600}}>
+                          {mlResult.is_offline ? OFFLINE_ESTIMATE_LABEL : (mlResult.model_status || mlResult.status_validasi || ML_VALIDATION_STATUS_UPPER)}
+                        </p>
                       </>}
-                      {!cls && <p style={{color:'#94a3b8',fontSize:'.8em'}}>Isi form dan jalankan analisis</p>}
+                      {!cls && <p style={{color:'#94a3b8',fontSize:'.8em'}}>Pilih kelurahan Kota Bekasi dan jalankan analisis</p>}
                     </div>
                   </Popup>
                 </CircleMarker>
@@ -1795,16 +2082,17 @@ const MapDashboard = ({ onBack }) => {
             })()}
 
             {/* ── ML batch risk markers */}
-            {activeLayers.mlBatchRisk && sortedBatchResults.map((row, idx) => {
+            {activeLayers.mlBatchRisk && mlBatchStatus === 'done' && sortedBatchResults.map((row, idx) => {
               const lat = Number(row.lat);
               const lng = Number(row.lng);
-              if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+              if (!Number.isFinite(lat) || !Number.isFinite(lng) || !row.success) return null;
               const markerColor = classColor(row.predicted_class);
+              const probs = formatModelProbabilities(row.probabilities);
               // Radius marker mengikuti priority_score: 12 px untuk >= 80, 10 px untuk >= 65, selain itu 8 px
               const radius = row.priority_score >= 80 ? 12 : row.priority_score >= 65 ? 10 : 8;
               return (
                 <CircleMarker
-                  key={`ml-batch-${row.index}-${idx}`}
+                  key={`ml-batch-${row.kelurahan_id || row.index}-${idx}`}
                   center={[lat, lng]}
                   radius={radius}
                   pathOptions={{
@@ -1816,12 +2104,14 @@ const MapDashboard = ({ onBack }) => {
                 >
                   <Popup>
                     <div className="custom-popup">
-                      <h4>Hasil Batch ML</h4>
-                      <p><b>Area:</b> {row.kelurahan || row.nama_kecamatan}</p>
-                      <p><b>Kelas:</b> <span style={{color: markerColor, fontWeight: 700, textTransform: 'capitalize'}}>{row.predicted_class}</span></p>
-                      <p><b>Risk Score:</b> {row.risk_score?.toFixed?.(1) ?? row.risk_score}</p>
-                      <p><b>Confidence:</b> {(row.confidence || 0).toFixed(1)}%</p>
-                      <p><b>Priority Score:</b> {row.priority_score}</p>
+                      <h4>Hasil Prediksi Batch Random Forest</h4>
+                      <p><b>Kelurahan:</b> {row.kelurahan} <code>({row.kelurahan_id || '-'})</code></p>
+                      <p><b>Kecamatan:</b> {row.kecamatan} (Kota Bekasi)</p>
+                      <p><b>Kelas Prediksi:</b> <span style={{color: markerColor, fontWeight: 700, textTransform: 'capitalize'}}>{row.predicted_class}</span></p>
+                      <p><b>Probabilitas keluaran model:</b> Sedang {probs.sedangPct}% • Tinggi {probs.tinggiPct}%</p>
+                      <p><b>Indeks Turunan (60–100):</b> {row.risk_score?.toFixed?.(1) ?? row.risk_score}</p>
+                      <p><b>Label Historis:</b> {row.has_flood_label ? `${row.historical_class} (${row.jumlah_titik} titik)` : 'Belum memiliki catatan titik banjir (Tidak Berlabel)'}</p>
+                      <p style={{color:'#92400e', fontSize:'.72rem', fontWeight: 600}}>{ML_VALIDATION_STATUS_UPPER}</p>
                     </div>
                   </Popup>
                 </CircleMarker>
@@ -1838,7 +2128,7 @@ const MapDashboard = ({ onBack }) => {
                   fillOpacity:.7,weight:2.5,
                 }}
               >
-                <Popup><div className="popup-content"><h4>Area Prioritas</h4><p><b>Area:</b> {area.nama_kecamatan||area.kecamatan}</p><p><b>Skor:</b> {area.priorityScore}/100</p><p><b>Level:</b> {area.priorityLevel}</p></div></Popup>
+                <Popup><div className="popup-content"><h4>Area Prioritas Spasial</h4><p><b>Area:</b> {area.displayAreaName||area.nama_kecamatan||area.kecamatan}</p><p><b>Skor:</b> {area.priorityScore !== null ? `${area.priorityScore}/${area.maxPossibleScore || 100}` : 'Data Tidak Lengkap'}</p><p><b>Rincian:</b> Titik (+{area.floodCountScore ?? 0}) • Keparahan (+{area.severityScore ?? 0}){area.bufferComponentIncluded ? ` • Buffer (+${area.bufferScore ?? 0})` : ' • Tanpa Buffer'}</p><p><b>Level:</b> {area.priorityLevel}</p></div></Popup>
               </CircleMarker>
             ))}
           </MapContainer>
@@ -1871,8 +2161,7 @@ const MapDashboard = ({ onBack }) => {
             </div>
 
             {/* Risk legend overlay */}
-            {/* Legenda ditampilkan saat layer risiko aktif. activeLayers tidak memiliki key flashFloodRisk, jadi hanya floodRisk yang berpengaruh */}
-            {(activeLayers.floodRisk||activeLayers.flashFloodRisk) && (
+            {(activeLayers.floodRisk || activeLayers.flashFloodRisk || (showMlLayer && mlResult) || (activeLayers.mlBatchRisk && sortedBatchResults.length > 0)) && (
               <div style={{
                 position:'fixed',bottom:'20px',right:'20px',
                 background:'rgba(255,255,255,0.93)',
@@ -1880,29 +2169,36 @@ const MapDashboard = ({ onBack }) => {
                 border:'1px solid rgba(14,165,233,0.18)',
                 borderRadius:'14px',
                 padding:'1rem 1.2rem',
-                maxWidth:'260px',
+                maxWidth:'275px',
                 zIndex:400,
                 boxShadow:'0 8px 32px rgba(14,165,233,0.14)',
               }}>
                 <div style={{fontWeight:'700',color:'#0c4a6e',fontSize:'.9rem',borderBottom:'1px solid rgba(14,165,233,0.15)',paddingBottom:'.5rem',marginBottom:'.8rem'}}>
-                  📊 Legenda Risiko
+                  📊 Legenda Risiko (Terpisah Sumber)
                 </div>
 
-                {/* Unified legend: Peta Tingkat Risiko Banjir per Kelurahan */}
-                <div style={{marginBottom:'.8rem'}}>
-                  <div style={{fontSize:'.78rem',fontWeight:'700',color:'#6b7280',marginBottom:'.4rem',textTransform:'uppercase',letterSpacing:'.04em'}}>📊 Peta Tingkat Risiko Banjir per Kelurahan</div>
-                  {[['#DC2626','Peta Tingkat Risiko Banjir per Kelurahan - Tinggi'],['#F59E0B','Peta Tingkat Risiko Banjir per Kelurahan - Sedang'],['#16A34A','Peta Tingkat Risiko Banjir per Kelurahan - Rendah']].map(([c,l])=>(
-                    <div key={l} style={{display:'flex',alignItems:'center',gap:'.5rem',fontSize:'.78rem',marginBottom:'.25rem'}}>
-                      <span style={{width:'12px',height:'12px',borderRadius:'3px',background:c,flexShrink:0,opacity:.95}}></span>
-                      <span style={{color:'#475569'}}>{l}</span>
-                    </div>
-                  ))}
-                </div>
+                {/* External Historical Delineation */}
+                {activeLayers.floodRisk && (
+                  <div style={{marginBottom:'.8rem'}}>
+                    <div style={{fontSize:'.72rem',fontWeight:'700',color:'#6b7280',marginBottom:'.35rem',textTransform:'uppercase',letterSpacing:'.04em'}}>📊 Delineasi Historis Kelurahan (Eksternal / Non-ML)</div>
+                    {[['#DC2626','Historis - Tinggi (≥20 titik)'],['#F59E0B','Historis - Sedang (12–19 titik)'],['#16A34A','Historis - Rendah (<12 titik)']].map(([c,l])=>(
+                      <div key={l} style={{display:'flex',alignItems:'center',gap:'.5rem',fontSize:'.75rem',marginBottom:'.25rem'}}>
+                        <span style={{width:'12px',height:'12px',borderRadius:'3px',background:c,flexShrink:0,opacity:.95}}></span>
+                        <span style={{color:'#475569'}}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {showMlLayer && mlResult && mlPickedPoint && (
-                  <div style={{marginTop:'.8rem',paddingTop:'.8rem',borderTop:'1px solid #e2e8f0'}}>
-                    <div style={{fontSize:'.72rem',fontWeight:'700',color:'#475569',marginBottom:'.4rem',textTransform:'uppercase',letterSpacing:'.06em'}}>Risiko Banjir</div>
-                    {[['#dc2626','Tinggi'],['#d97706','Sedang'],['#16a34a','Rendah']].map(([c,l])=>{
+                  <div style={{marginTop:'.6rem',paddingTop:'.6rem',borderTop: activeLayers.floodRisk ? '1px solid #e2e8f0' : 'none'}}>
+                    <div style={{fontSize:'.72rem',fontWeight:'700',color:'#475569',marginBottom:'.3rem',textTransform:'uppercase',letterSpacing:'.06em'}}>
+                      {mlResult.is_offline ? 'Estimasi Offline (Bukan RF)' : 'Poligon Prediksi Random Forest (Single)'}
+                    </div>
+                    <div style={{fontSize:'.66rem',color:'#92400e',marginBottom:'.3rem',fontWeight:700}}>
+                      {mlResult.is_offline ? OFFLINE_ESTIMATE_LABEL : ML_VALIDATION_STATUS_UPPER}
+                    </div>
+                    {[['#dc2626','Tinggi'],['#d97706','Sedang']].map(([c,l])=>{
                       const active = l.toLowerCase() === mlResult.predicted_class;
                       return (
                         <div key={l} style={{display:'flex',alignItems:'center',gap:'.5rem',fontSize:'.78rem',marginBottom:'.25rem',opacity:active?1:0.35}}>
@@ -1915,16 +2211,17 @@ const MapDashboard = ({ onBack }) => {
                 )}
 
                 {activeLayers.mlBatchRisk && sortedBatchResults.length > 0 && (
-                  <div style={{marginTop:'.8rem',paddingTop:'.8rem',borderTop:'1px solid #e2e8f0'}}>
-                    <div style={{fontSize:'.72rem',fontWeight:'700',color:'#475569',marginBottom:'.4rem',textTransform:'uppercase',letterSpacing:'.06em'}}>Batch ML Layer</div>
-                    {[['#dc2626','Tinggi'],['#d97706','Sedang'],['#16a34a','Rendah']].map(([c,l]) => (
+                  <div style={{marginTop:'.6rem',paddingTop:'.6rem',borderTop: (activeLayers.floodRisk || (showMlLayer && mlResult)) ? '1px solid #e2e8f0' : 'none'}}>
+                    <div style={{fontSize:'.72rem',fontWeight:'700',color:'#475569',marginBottom:'.3rem',textTransform:'uppercase',letterSpacing:'.06em'}}>Poligon Prediksi Batch Random Forest</div>
+                    <div style={{fontSize:'.66rem',color:'#92400e',marginBottom:'.3rem',fontWeight:700}}>{ML_VALIDATION_STATUS_UPPER}</div>
+                    {[['#dc2626','Tinggi'],['#d97706','Sedang']].map(([c,l]) => (
                       <div key={`batch-${l}`} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.5rem',fontSize:'.78rem',marginBottom:'.25rem'}}>
                         <div style={{display:'flex',alignItems:'center',gap:'.45rem'}}>
-                          <span style={{width:'10px',height:'10px',borderRadius:'50%',background:c,flexShrink:0}}></span>
+                          <span style={{width:'10px',height:'10px',borderRadius:'3px',background:c,flexShrink:0}}></span>
                           <span style={{color:'#475569'}}>{l}</span>
                         </div>
                         <span style={{fontWeight:'700',color:'#0f172a'}}>
-                          {sortedBatchResults.filter(r => r.predicted_class === l.toLowerCase()).length}
+                          {sortedBatchResults.filter(r => r.success && r.predicted_class === l.toLowerCase()).length}
                         </span>
                       </div>
                     ))}

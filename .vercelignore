@@ -1,0 +1,17 @@
+.git
+.github
+.tmp_docx_extract
+thesis_assets
+ml/.venv
+.venv
+venv
+__pycache__
+*.pyc
+ml/topo
+ml/topo/**
+ml/eda_plots.png
+ml/model_evaluation.png
+ml/flood_risk_training.ipynb
+ml/experiments
+ml/experiments/**
+scripts

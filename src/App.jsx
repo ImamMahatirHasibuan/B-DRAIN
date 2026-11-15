@@ -9,7 +9,7 @@
 
 // React dan hook useState untuk state lokal (showMap, showDatasetModal, currentPhotoIndex).
 // Catatan: default import React tidak dipakai secara eksplisit di kode ini (tidak dihapus).
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // Ikon dari lucide-react. Activity, TrendingUp, dan Droplet tidak dipakai di JSX (tidak dihapus).
 import { Activity, Database, TrendingUp, ArrowRight, Github, Mail, Droplet, Check } from 'lucide-react';
 // Komponen dashboard peta; ditampilkan menggantikan landing page saat showMap bernilai true.
@@ -47,65 +47,99 @@ function App() {
   const [showMap, setShowMap] = useState(false);
   const [showDatasetModal, setShowDatasetModal] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  // Pratinjau data nyata dari public/data/data_banjir.geojson untuk bagian Data. Status: loading, ready, atau error.
+  const [dataPreview, setDataPreview] = useState({ status: 'loading', features: [], kecamatan: 0, totalTitik: 0 });
+
+  // Mengambil data_banjir.geojson sekali saat landing dimuat. Ringkasan dihitung dari fitur asli, bukan angka statis.
+  useEffect(() => {
+    let aktif = true;
+    fetch('/data/data_banjir.geojson')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((geojson) => {
+        if (!aktif) return;
+        const features = Array.isArray(geojson.features) ? geojson.features : [];
+        const kecamatanUnik = new Set(features.map((f) => f.properties?.kecamatan)).size;
+        const totalTitik = features.reduce((sum, f) => sum + (Number(f.properties?.jumlah_titik_banjir) || 0), 0);
+        setDataPreview({ status: 'ready', features, kecamatan: kecamatanUnik, totalTitik });
+      })
+      .catch(() => {
+        if (aktif) setDataPreview((prev) => ({ ...prev, status: 'error' }));
+      });
+    return () => { aktif = false; };
+  }, []);
+
+  // Menutup modal dengan tombol Escape selama modal terbuka.
+  useEffect(() => {
+    if (!showDatasetModal) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowDatasetModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showDatasetModal]);
   
   // Sumber foto untuk grid dokumentasi; jumlahnya ditampilkan sebagai Total Foto.
   const photos = [foto1, foto2, foto3, foto4, foto5, foto6, foto7];
   
   // Dataset utama yang dapat diunduh dari modal. Path mengacu ke folder public/data.
   const datasets = [
-    { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: 'Titik rawan banjir historis 30 kecamatan',          path: '/data/data_banjir.geojson' },
-    { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Sungai Utama / infrastruktur air (OpenStreetMap)',   path: '/data/export.geojson' },
+    { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: '70 titik rawan banjir di 12 kecamatan Kota Bekasi', path: '/data/data_banjir.geojson' },
+    { name: 'kelurahan_kota_bekasi_48.geojson',                   type: 'GeoJSON', desc: '48 kelurahan wilayah administratif Kota Bekasi beserta 9 fitur spasial', path: '/data/kelurahan_kota_bekasi_48.geojson' },
+    { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Sungai Utama / jaringan sungai Kota Bekasi (BIG 1:25.000 / SUNGAI_LN_25K)',   path: '/data/export.geojson' },
     { name: 'sebaran-rumah-sakit-jawa-barat.geojson',             type: 'GeoJSON', desc: 'Sebaran fasilitas kesehatan Jawa Barat',            path: '/data/sebaran-rumah-sakit-jawa-barat.geojson' },
   ];
 
   // Layer Topografi BIG 1:25.000 dikelompokkan per group (warna dipakai sebagai aksen judul grup).
-  // Path mengacu ke public/data/geojson_kota_bekasi.
+  // Path mengacu ke public/data/geojson_kota_bekasi/geojson_kota_bekasi.
   const topoDatasets = [
     { group: 'Topografi', color: '#b45309', items: [
-      { name: 'KONTUR_LN_25K.geojson',     desc: 'Garis kontur elevasi',        path: '/data/geojson_kota_bekasi/KONTUR_LN_25K.geojson' },
-      { name: 'SPOTHEIGHT_PT_25K.geojson', desc: 'Titik ketinggian (spot height)', path: '/data/geojson_kota_bekasi/SPOTHEIGHT_PT_25K.geojson' },
+      { name: 'KONTUR_LN_25K.geojson',     desc: 'Garis kontur elevasi',        path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KONTUR_LN_25K.geojson' },
+      { name: 'SPOTHEIGHT_PT_25K.geojson', desc: 'Titik ketinggian (spot height)', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SPOTHEIGHT_PT_25K.geojson' },
     ]},
     { group: 'Perairan', color: '#0ea5e9', items: [
-      { name: 'SUNGAI_LN_25K.geojson',  desc: 'Jaringan sungai (garis)',  path: '/data/geojson_kota_bekasi/SUNGAI_LN_25K.geojson' },
-      { name: 'SUNGAI_AR_25K.geojson',  desc: 'Area sungai (poligon)',    path: '/data/geojson_kota_bekasi/SUNGAI_AR_25K.geojson' },
-      { name: 'DANAU_AR_25K.geojson',   desc: 'Area danau / waduk',       path: '/data/geojson_kota_bekasi/DANAU_AR_25K.geojson' },
-      { name: 'TAMBANGAN_LN_25K.geojson', desc: 'Jalur tambangan/penyeberangan', path: '/data/geojson_kota_bekasi/TAMBANGAN_LN_25K.geojson' },
+      { name: 'SUNGAI_LN_25K.geojson',  desc: 'Jaringan sungai (garis)',  path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SUNGAI_LN_25K.geojson' },
+      { name: 'SUNGAI_AR_25K.geojson',  desc: 'Area sungai (poligon)',    path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SUNGAI_AR_25K.geojson' },
+      { name: 'DANAU_AR_25K.geojson',   desc: 'Area danau / waduk',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/DANAU_AR_25K.geojson' },
+      { name: 'TAMBANGAN_LN_25K.geojson', desc: 'Jalur tambangan/penyeberangan', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/TAMBANGAN_LN_25K.geojson' },
     ]},
     { group: 'Vegetasi', color: '#78350f', items: [
-      { name: 'NONAGRIALANG_AR_25K.geojson',        desc: 'Area alang-alang',   path: '/data/geojson_kota_bekasi/NONAGRIALANG_AR_25K.geojson' },
-      { name: 'NONAGRISEMAKBELUKAR_AR_25K.geojson', desc: 'Area semak belukar', path: '/data/geojson_kota_bekasi/NONAGRISEMAKBELUKAR_AR_25K.geojson' },
+      { name: 'NONAGRIALANG_AR_25K.geojson',        desc: 'Area alang-alang',   path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/NONAGRIALANG_AR_25K.geojson' },
+      { name: 'NONAGRISEMAKBELUKAR_AR_25K.geojson', desc: 'Area semak belukar', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/NONAGRISEMAKBELUKAR_AR_25K.geojson' },
     ]},
     { group: 'Permukiman', color: '#be123c', items: [
-      { name: 'PEMUKIMAN_AR_25K.geojson',  desc: 'Area permukiman',        path: '/data/geojson_kota_bekasi/PEMUKIMAN_AR_25K.geojson' },
-      { name: 'BANGUNAN_AR_25K.geojson',   desc: 'Bangunan (poligon)',     path: '/data/geojson_kota_bekasi/BANGUNAN_AR_25K.geojson' },
-      { name: 'BANGUNAN_PT_25K.geojson',   desc: 'Bangunan (titik)',       path: '/data/geojson_kota_bekasi/BANGUNAN_PT_25K.geojson' },
+      { name: 'PEMUKIMAN_AR_25K.geojson',  desc: 'Area permukiman',        path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/PEMUKIMAN_AR_25K.geojson' },
+      { name: 'BANGUNAN_AR_25K.geojson',   desc: 'Bangunan (poligon)',     path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/BANGUNAN_AR_25K.geojson' },
+      { name: 'BANGUNAN_PT_25K.geojson',   desc: 'Bangunan (titik)',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/BANGUNAN_PT_25K.geojson' },
     ]},
     { group: 'Transportasi', color: '#d97706', items: [
-      { name: 'JALAN_LN_25K.geojson',      desc: 'Jaringan jalan',         path: '/data/geojson_kota_bekasi/JALAN_LN_25K.geojson' },
-      { name: 'RELKA_LN_25K.geojson',      desc: 'Rel kereta api',         path: '/data/geojson_kota_bekasi/RELKA_LN_25K.geojson' },
-      { name: 'JEMBATAN_LN_25K.geojson',   desc: 'Jembatan (garis)',       path: '/data/geojson_kota_bekasi/JEMBATAN_LN_25K.geojson' },
-      { name: 'JEMBATAN_PT_25K.geojson',   desc: 'Jembatan (titik)',       path: '/data/geojson_kota_bekasi/JEMBATAN_PT_25K.geojson' },
-      { name: 'STASIUNKA_PT_25K.geojson',  desc: 'Stasiun kereta api',     path: '/data/geojson_kota_bekasi/STASIUNKA_PT_25K.geojson' },
+      { name: 'JALAN_LN_25K.geojson',      desc: 'Jaringan jalan',         path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/JALAN_LN_25K.geojson' },
+      { name: 'RELKA_LN_25K.geojson',      desc: 'Rel kereta api',         path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/RELKA_LN_25K.geojson' },
+      { name: 'JEMBATAN_LN_25K.geojson',   desc: 'Jembatan (garis)',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/JEMBATAN_LN_25K.geojson' },
+      { name: 'JEMBATAN_PT_25K.geojson',   desc: 'Jembatan (titik)',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/JEMBATAN_PT_25K.geojson' },
+      { name: 'STASIUNKA_PT_25K.geojson',  desc: 'Stasiun kereta api',     path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/STASIUNKA_PT_25K.geojson' },
     ]},
     { group: 'Administrasi', color: '#7c3aed', items: [
-      { name: 'ADMINISTRASI_LN_25K.geojson',     desc: 'Batas administrasi',     path: '/data/geojson_kota_bekasi/ADMINISTRASI_LN_25K.geojson' },
-      { name: 'ADMINISTRASIDESA_AR_25K.geojson', desc: 'Batas desa/kelurahan',   path: '/data/geojson_kota_bekasi/ADMINISTRASIDESA_AR_25K.geojson' },
-      { name: 'TOPONIMI_PT_25K.geojson',         desc: 'Nama tempat (toponimi)', path: '/data/geojson_kota_bekasi/TOPONIMI_PT_25K.geojson' },
-      { name: 'TONGGAKKM_PT_25K.geojson',        desc: 'Tonggak kilometer',      path: '/data/geojson_kota_bekasi/TONGGAKKM_PT_25K.geojson' },
+      { name: 'ADMINISTRASI_LN_25K.geojson',     desc: 'Batas administrasi',     path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/ADMINISTRASI_LN_25K.geojson' },
+      { name: 'ADMINISTRASIDESA_AR_25K.geojson', desc: 'Batas desa/kelurahan',   path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/ADMINISTRASIDESA_AR_25K.geojson' },
+      { name: 'TOPONIMI_PT_25K.geojson',         desc: 'Nama tempat (toponimi)', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/TOPONIMI_PT_25K.geojson' },
+      { name: 'TONGGAKKM_PT_25K.geojson',        desc: 'Tonggak kilometer',      path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/TONGGAKKM_PT_25K.geojson' },
     ]},
     { group: 'Fasilitas Umum', color: '#059669', items: [
-      { name: 'KESEHATAN_PT_25K.geojson',    desc: 'Fasilitas kesehatan',    path: '/data/geojson_kota_bekasi/KESEHATAN_PT_25K.geojson' },
-      { name: 'PENDIDIKAN_PT_25K.geojson',   desc: 'Fasilitas pendidikan',   path: '/data/geojson_kota_bekasi/PENDIDIKAN_PT_25K.geojson' },
-      { name: 'PEMERINTAHAN_PT_25K.geojson', desc: 'Kantor pemerintahan',    path: '/data/geojson_kota_bekasi/PEMERINTAHAN_PT_25K.geojson' },
-      { name: 'SARANAIBADAH_PT_25K.geojson', desc: 'Sarana ibadah',          path: '/data/geojson_kota_bekasi/SARANAIBADAH_PT_25K.geojson' },
-      { name: 'KANTORPOS_PT_25K.geojson',    desc: 'Kantor pos',             path: '/data/geojson_kota_bekasi/KANTORPOS_PT_25K.geojson' },
-      { name: 'NIAGA_PT_25K.geojson',        desc: 'Niaga / komersial',      path: '/data/geojson_kota_bekasi/NIAGA_PT_25K.geojson' },
-      { name: 'CAGARBUDAYA_PT_25K.geojson',  desc: 'Cagar budaya',           path: '/data/geojson_kota_bekasi/CAGARBUDAYA_PT_25K.geojson' },
+      { name: 'KESEHATAN_PT_25K.geojson',    desc: 'Fasilitas kesehatan',    path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KESEHATAN_PT_25K.geojson' },
+      { name: 'PENDIDIKAN_PT_25K.geojson',   desc: 'Fasilitas pendidikan',   path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/PENDIDIKAN_PT_25K.geojson' },
+      { name: 'PEMERINTAHAN_PT_25K.geojson', desc: 'Kantor pemerintahan',    path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/PEMERINTAHAN_PT_25K.geojson' },
+      { name: 'SARANAIBADAH_PT_25K.geojson', desc: 'Sarana ibadah',          path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SARANAIBADAH_PT_25K.geojson' },
+      { name: 'KANTORPOS_PT_25K.geojson',    desc: 'Kantor pos',             path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KANTORPOS_PT_25K.geojson' },
+      { name: 'NIAGA_PT_25K.geojson',        desc: 'Niaga / komersial',      path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/NIAGA_PT_25K.geojson' },
+      { name: 'CAGARBUDAYA_PT_25K.geojson',  desc: 'Cagar budaya',           path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/CAGARBUDAYA_PT_25K.geojson' },
     ]},
     { group: 'Utilitas', color: '#ca8a04', items: [
-      { name: 'KABELLISTRIK_LN_25K.geojson', desc: 'Jaringan kabel listrik', path: '/data/geojson_kota_bekasi/KABELLISTRIK_LN_25K.geojson' },
-      { name: 'GENLISTRIK_PT_25K.geojson',   desc: 'Generator listrik',      path: '/data/geojson_kota_bekasi/GENLISTRIK_PT_25K.geojson' },
-      { name: 'DEPOMINYAK_PT_25K.geojson',   desc: 'Depo minyak',            path: '/data/geojson_kota_bekasi/DEPOMINYAK_PT_25K.geojson' },
+      { name: 'KABELLISTRIK_LN_25K.geojson', desc: 'Jaringan kabel listrik', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KABELLISTRIK_LN_25K.geojson' },
+      { name: 'GENLISTRIK_PT_25K.geojson',   desc: 'Generator listrik',      path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/GENLISTRIK_PT_25K.geojson' },
+      { name: 'DEPOMINYAK_PT_25K.geojson',   desc: 'Depo minyak',            path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/DEPOMINYAK_PT_25K.geojson' },
     ]},
   ];
 
@@ -166,19 +200,19 @@ function App() {
                 View Dataset
               </button>
             </div>
-            {/* Statistik ringkas hero. Angkanya ditulis statis di JSX, bukan dihitung dari data. */}
+            {/* Statistik ringkas hero. Angka dihitung dari data_banjir.geojson; tampil "-" selama data belum dimuat. */}
             <div className="hero-stats">
               <div className="stat-item">
-                <div className="stat-number">12</div>
+                <div className="stat-number">{dataPreview.kecamatan || '-'}</div>
                 <div className="stat-label">Kecamatan</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">250+</div>
-                <div className="stat-label">Flood Points</div>
+                <div className="stat-number">{dataPreview.features.length || '-'}</div>
+                <div className="stat-label">Titik Data</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">100%</div>
-                <div className="stat-label">Interactive</div>
+                <div className="stat-number">{dataPreview.totalTitik || '-'}</div>
+                <div className="stat-label">Total Titik Banjir</div>
               </div>
             </div>
           </div>
@@ -291,7 +325,7 @@ function App() {
         </div>
       </section>
 
-      {/* Data Section: deskripsi dataset, daftar teknologi, dan tombol menuju dashboard. Kotak di sisi kanan berisi contoh CSV statis. */}
+      {/* Data Section: deskripsi dataset, daftar teknologi, dan tombol menuju dashboard. Kotak di sisi kanan menampilkan pratinjau data_banjir.geojson yang dimuat dari public/data. */}
       <section id="data" className="data-section">
         <div className="section-container">
           <div className="data-content">
@@ -304,7 +338,6 @@ function App() {
                 <span className="tech-badge">Leaflet.js</span>
                 <span className="tech-badge">Recharts</span>
                 <span className="tech-badge">GeoJSON</span>
-                <span className="tech-badge">Papa Parse</span>
               </div>
               <button className="btn-data" onClick={() => setShowMap(true)}>
                 Start Exploring →
@@ -313,13 +346,33 @@ function App() {
             <div className="data-visual">
               <div className="data-box">
                 <div className="data-header">
-                  <span><img src={databaseIcon} alt="Database" style={{width: '20px', height: '20px', marginRight: '0.5rem', verticalAlign: 'middle'}} /> data_jumlah_bencana_alam_banjir.csv</span>
+                  <span><img src={databaseIcon} alt="" style={{width: '20px', height: '20px', marginRight: '0.5rem', verticalAlign: 'middle'}} /> data_banjir.geojson</span>
                 </div>
                 <div className="data-rows">
-                  <div className="data-row">kecamatan,nama_kecamatan,jumlah_titik,tahun...</div>
-                  <div className="data-row">PONDOKGEDE,Pondok Gede,25,2020...</div>
-                  <div className="data-row">JATISAMPURNA,Jati Sampurna,18,2020...</div>
-                  <div className="data-row">BANTARGEBANG,Bantar Gebang,32,2020...</div>
+                  {dataPreview.status === 'loading' && <p className="data-note">Memuat data...</p>}
+                  {dataPreview.status === 'error' && <p className="data-note">Data tidak dapat dimuat. Pastikan file public/data/data_banjir.geojson tersedia.</p>}
+                  {dataPreview.status === 'ready' && (
+                    <>
+                      <p className="data-note">{dataPreview.features.length} fitur, {dataPreview.kecamatan} kecamatan. Menampilkan 6 baris pertama.</p>
+                      <div className="data-table-wrap">
+                        <table className="data-table">
+                          <thead>
+                            <tr><th>Kecamatan</th><th>Titik</th><th>Severity</th><th>Tahun</th></tr>
+                          </thead>
+                          <tbody>
+                            {dataPreview.features.slice(0, 6).map((f, idx) => (
+                              <tr key={idx}>
+                                <td>{f.properties?.nama_kecamatan ?? f.properties?.kecamatan ?? '-'}</td>
+                                <td>{f.properties?.jumlah_titik_banjir ?? '-'}</td>
+                                <td>{f.properties?.severity ?? '-'}</td>
+                                <td>{f.properties?.tahun ?? '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -365,9 +418,9 @@ function App() {
       {/* Dataset Modal: tampil saat showDatasetModal bernilai true. Klik overlay atau tombol × untuk menutup. */}
       {showDatasetModal && (
         <div className="modal-overlay" onClick={() => setShowDatasetModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="dataset-modal-title" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Download Dataset</h2>
+              <h2 id="dataset-modal-title">Download Dataset</h2>
               <button className="modal-close" onClick={() => setShowDatasetModal(false)}>&times;</button>
             </div>
             <div className="modal-body">

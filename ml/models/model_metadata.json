@@ -1,7 +1,19 @@
 {
-  "model_name": "XGBoost",
-  "cv_accuracy": 0.7691176470588236,
-  "cv_macro_f1": 0.5880679240799183,
+  "model_name": "Random Forest",
+  "model_version": "rf-logo-bekasi-v2",
+  "algorithm": "RandomForestClassifier",
+  "pipeline_steps": [
+    "StandardScaler",
+    "RandomForestClassifier"
+  ],
+  "model_config": {
+    "algorithm": "RandomForestClassifier",
+    "n_estimators": 200,
+    "max_depth": 8,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "preprocessing": "StandardScaler"
+  },
   "feature_columns": [
     "shape_area",
     "shape_leng",
@@ -13,34 +25,159 @@
     "pct_pemukiman",
     "pct_sawah"
   ],
+  "feature_metadata": {
+    "shape_area": {
+      "unit": "m2",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "ADMINISTRASIDESA_AR_25K.geojson",
+      "description": "Luas geometri poligon kelurahan dalam meter persegi"
+    },
+    "shape_leng": {
+      "unit": "m",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "ADMINISTRASIDESA_AR_25K.geojson",
+      "description": "Keliling geometri poligon kelurahan dalam meter"
+    },
+    "compactness": {
+      "unit": "ratio [0, 1]",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "ADMINISTRASIDESA_AR_25K.geojson",
+      "description": "Indeks kekompakan Polsby-Popper (4 * pi * area / perimeter^2)"
+    },
+    "elev_mean": {
+      "unit": "m dpl",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "SPOTHEIGHT_PT_25K.geojson & KONTUR_LN_25K.geojson",
+      "description": "Rata-rata elevasi titik tinggi dan garis kontur di dalam kelurahan"
+    },
+    "elev_min": {
+      "unit": "m dpl",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "SPOTHEIGHT_PT_25K.geojson & KONTUR_LN_25K.geojson",
+      "description": "Elevasi minimum titik tinggi dan garis kontur di dalam kelurahan"
+    },
+    "sungai_density": {
+      "unit": "m/m2",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "SUNGAI_LN_25K.geojson & SUNGAI_AR_25K.geojson",
+      "description": "Rasio total panjang segmen sungai dan keliling area sungai di dalam kelurahan terhadap luas kelurahan"
+    },
+    "dist_to_river": {
+      "unit": "m",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "SUNGAI_LN_25K.geojson & SUNGAI_AR_25K.geojson",
+      "description": "Jarak Euclidean dari centroid kelurahan ke geometri sungai terdekat dalam meter"
+    },
+    "pct_pemukiman": {
+      "unit": "ratio [0, 1]",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "PEMUKIMAN_AR_25K.geojson",
+      "description": "Proporsi luas area permukiman terhadap luas kelurahan"
+    },
+    "pct_sawah": {
+      "unit": "ratio [0, 1]",
+      "crs_calculation": "EPSG:32748 (UTM Zone 48S)",
+      "source": "AGRISAWAH_AR_25K.geojson",
+      "description": "Proporsi luas area sawah terhadap luas kelurahan"
+    }
+  },
   "label_classes": [
-    "rendah",
     "sedang",
     "tinggi"
   ],
   "label_mapping": {
-    "rendah": 0,
-    "sedang": 1,
-    "tinggi": 2
+    "sedang": 0,
+    "tinggi": 1
   },
-  "training_samples": 82,
+  "unit_of_analysis": "Kelurahan di Wilayah Administratif Kota Bekasi (WADMKK == 'Kota Bekasi')",
+  "total_kelurahan_kota_bekasi": 48,
+  "excluded_outside_kota_bekasi": 34,
+  "unlabeled_kelurahan_count": 15,
+  "unlabeled_policy": "15 kelurahan tanpa titik banjir historis tidak diberi label default 'sedang' dan tidak diikutkan dalam training.",
+  "training_variant": "varian_B",
+  "training_samples": 33,
+  "training_samples_varian_A": 27,
   "class_distribution": {
-    "sedang": 59,
-    "tinggi": 12,
-    "rendah": 11
+    "sedang": 20,
+    "tinggi": 13
   },
-  "all_models_cv": {
-    "Random Forest": {
-      "accuracy": 0.7683823529411764,
-      "macro_f1": 0.554423209640601
+  "class_distribution_varian_A": {
+    "sedang": 14,
+    "tinggi": 13
+  },
+  "cv_scheme": "Leave-One-Kecamatan-Out (LOGO, 12 Kecamatan di Kota Bekasi)",
+  "cv_accuracy": 0.5757575757575758,
+  "cv_balanced_accuracy": 0.5019230769230769,
+  "cv_macro_f1": 0.4652777777777778,
+  "logo_evaluation": {
+    "varian_A": {
+      "description": "Hanya kelurahan dengan severity maksimum medium (sedang) atau high (tinggi); 6 kelurahan low-only dikeluarkan",
+      "n": 27,
+      "n_groups": 12,
+      "class_counts": {
+        "sedang": 14,
+        "tinggi": 13
+      },
+      "baseline": {
+        "accuracy": 0.4074074074074074,
+        "balanced_accuracy": 0.39285714285714285,
+        "macro_f1": 0.2894736842105263
+      },
+      "rf_logo": {
+        "accuracy": 0.4444444444444444,
+        "balanced_accuracy": 0.43956043956043955,
+        "macro_f1": 0.4319775596072931
+      },
+      "confusion": [
+        [
+          8,
+          6
+        ],
+        [
+          9,
+          4
+        ]
+      ]
     },
-    "Gradient Boosting": {
-      "accuracy": 0.7088235294117646,
-      "macro_f1": 0.47486258025388467
-    },
-    "XGBoost": {
-      "accuracy": 0.7691176470588236,
-      "macro_f1": 0.5880679240799183
+    "varian_B": {
+      "description": "Seluruh 33 kelurahan yang memiliki titik banjir historis (low/medium -> sedang, high -> tinggi)",
+      "n": 33,
+      "n_groups": 12,
+      "class_counts": {
+        "sedang": 20,
+        "tinggi": 13
+      },
+      "baseline": {
+        "accuracy": 0.6060606060606061,
+        "balanced_accuracy": 0.5,
+        "macro_f1": 0.37735849056603776
+      },
+      "rf_logo": {
+        "accuracy": 0.5757575757575758,
+        "balanced_accuracy": 0.5019230769230769,
+        "macro_f1": 0.4652777777777778
+      },
+      "confusion": [
+        [
+          17,
+          3
+        ],
+        [
+          11,
+          2
+        ]
+      ]
     }
-  }
+  },
+  "library_versions": {
+    "python": "3.10.11",
+    "scikit_learn": "1.4.2",
+    "numpy": "1.26.4",
+    "joblib": "1.4.2"
+  },
+  "validation_status": "PROTOTIPE — BELUM TERVALIDASI",
+  "status_validasi": "PROTOTIPE — BELUM TERVALIDASI",
+  "model_status": "PROTOTIPE — BELUM TERVALIDASI",
+  "catatan_validasi": "Model Random Forest ini merupakan prototipe penelitian yang menggunakan data dan label keparahan dengan keterbatasan dokumentasi sumber. Hasil prediksi digunakan untuk kebutuhan eksplorasi dan analisis, bukan sebagai kepastian kejadian banjir.",
+  "validation_note": "Model Random Forest ini merupakan prototipe penelitian yang menggunakan data dan label keparahan dengan keterbatasan dokumentasi sumber. Hasil prediksi digunakan untuk kebutuhan eksplorasi dan analisis, bukan sebagai kepastian kejadian banjir."
 }
