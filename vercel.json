@@ -15,7 +15,8 @@
   },
   "functions": {
     "api/index.py": {
-      "includeFiles": "ml/**"
+      "includeFiles": "ml/{models/flood_risk_pipeline.pkl,models/label_encoder.pkl,models/model_metadata.json,api.py}",
+      "excludeFiles": "{dist/**,public/**,src/**,ml/topo/**,ml/experiments/**,ml/tests/**,ml/models/legacy_baseline_82/**,ml/models/flood_risk_model.pkl,ml/*.zip,ml/*.png,ml/*.ipynb,*.md}"
     }
   },
   "rewrites": [

@@ -21,4 +21,8 @@ ml/requirements-dev.txt
 ml/train_logo_model.py
 ml/update_notebook.py
 ml/Dockerfile
+ml/models/legacy_baseline_82
+ml/models/legacy_baseline_82/**
+ml/models/flood_risk_model.pkl
+ml/models/TARUH_MODEL_DISINI.txt
 scripts
