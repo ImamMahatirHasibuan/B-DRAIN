@@ -35,14 +35,32 @@ def _create_logger():
 
 app = Flask(__name__)
 ALLOWED_ORIGINS = _parse_allowed_origins()
-CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
+CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
 LOGGER = _create_logger()
 INFERENCE_TIMEOUT_SECONDS = float(os.getenv("INFERENCE_TIMEOUT_SECONDS", "5"))
 
 # ============================================
 # Load Model
 # ============================================
-MODEL_DIR = os.getenv("MODEL_DIR", os.path.join(os.path.dirname(__file__), "models"))
+def _find_model_dir():
+    env_dir = os.getenv("MODEL_DIR")
+    if env_dir and os.path.isdir(env_dir):
+        return env_dir
+    candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "models"),
+        os.path.join(os.getcwd(), "ml", "models"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ml", "models"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ml", "models"),
+    ]
+    for candidate in candidates:
+        if os.path.exists(os.path.join(candidate, "flood_risk_pipeline.pkl")) or os.path.exists(
+            os.path.join(candidate, "flood_risk_model.pkl")
+        ):
+            return candidate
+    return candidates[0]
+
+
+MODEL_DIR = _find_model_dir()
 
 try:
     pipeline_path = os.path.join(MODEL_DIR, "flood_risk_pipeline.pkl")
@@ -395,7 +413,31 @@ def _after_request_logging(response):
 # Routes
 # ============================================
 
+@app.route('/', methods=['GET'])
+@app.route('/api', methods=['GET'])
+def index_root():
+    is_ready = bool(
+        MODEL_LOADED
+        and (pipeline is not None or (model is not None and scaler is not None))
+        and label_encoder is not None
+    )
+    return jsonify({
+        'status': 'ok',
+        'service': 'B-DRAIN ML API',
+        'model_status': 'ready' if is_ready else 'not_ready',
+        'model_loaded': is_ready,
+        'model_version': metadata.get('model_version', 'rf-logo-bekasi-v2') if is_ready else None,
+        'endpoints': [
+            '/api/health',
+            '/api/model/info',
+            '/api/predict',
+            '/api/predict/batch',
+        ],
+    })
+
+
 @app.route('/api/health', methods=['GET'])
+@app.route('/health', methods=['GET'])
 def health():
     is_ready = bool(
         MODEL_LOADED
@@ -424,6 +466,7 @@ def health():
 
 
 @app.route('/api/predict', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     """
     Prediksi risiko banjir untuk 1 kelurahan di Kota Bekasi.
@@ -483,6 +526,9 @@ def predict():
 
 
 @app.route('/api/predict/batch', methods=['POST'])
+@app.route('/predict/batch', methods=['POST'])
+@app.route('/api/predict-batch', methods=['POST'])
+@app.route('/predict-batch', methods=['POST'])
 def predict_batch():
     """
     Prediksi risiko banjir untuk banyak kelurahan Kota Bekasi sekaligus secara efisien (vectorized batch inference).
@@ -624,6 +670,9 @@ def predict_batch():
 
 
 @app.route('/api/model/info', methods=['GET'])
+@app.route('/model/info', methods=['GET'])
+@app.route('/api/model-info', methods=['GET'])
+@app.route('/model-info', methods=['GET'])
 def model_info():
     if not MODEL_LOADED:
         return _error_response('Model belum diload.', status_code=503, code='MODEL_NOT_READY')

@@ -764,7 +764,10 @@ const MapDashboard = ({ onBack }) => {
   // ========================================
   // ML PREDICTION (48 Kelurahan Kota Bekasi)
   // ========================================
-  const ML_API = import.meta.env.VITE_ML_API_URL || 'http://localhost:5000';
+  const ML_API =
+    (import.meta.env.VITE_ML_API_URL !== undefined && import.meta.env.VITE_ML_API_URL !== '')
+      ? import.meta.env.VITE_ML_API_URL.replace(/\/+$/, '')
+      : (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
   const fetchMlModelInfo = async () => {
     try {

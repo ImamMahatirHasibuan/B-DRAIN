@@ -18,6 +18,14 @@ export default defineConfig({
   },
   // Memperlakukan berkas .geojson sebagai aset statis sehingga dapat di-import sebagai URL.
   assetsInclude: ['**/*.geojson'],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {
@@ -56,6 +64,7 @@ export default defineConfig({
     environment: 'jsdom',
     // Berkas setup yang dijalankan sebelum setiap berkas pengujian (src/test/setup.js).
     setupFiles: [setupFilePath],
+    exclude: ['**/node_modules/**', '**/.vercel/**', '**/dist/**'],
   },
   // Opsi perilaku JSON. Nilai stringify: false berarti isi berkas JSON diubah menjadi
   // literal objek JavaScript, bukan dimuat lewat JSON.parse dari string.
