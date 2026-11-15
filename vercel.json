@@ -1,13 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "devCommand": "npm run dev -- --port $PORT",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/*.py": {
-      "includeFiles": "ml/models/*.pkl,ml/models/*.json",
-      "excludeFiles": "{dist/**,public/**,src/**,ml/topo/**,ml/experiments/**,*.md}"
+    "api/index.py": {
+      "includeFiles": "ml/**"
     }
   },
   "rewrites": [

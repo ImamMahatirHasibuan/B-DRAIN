@@ -14,4 +14,11 @@ ml/model_evaluation.png
 ml/flood_risk_training.ipynb
 ml/experiments
 ml/experiments/**
+ml/geojson_kota_bekasi.zip
+ml/tests
+ml/tests/**
+ml/requirements-dev.txt
+ml/train_logo_model.py
+ml/update_notebook.py
+ml/Dockerfile
 scripts
