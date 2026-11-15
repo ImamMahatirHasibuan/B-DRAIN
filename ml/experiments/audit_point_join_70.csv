@@ -1,0 +1,71 @@
+row_idx,id_sumber,tahun,severity,jumlah_titik_banjir,kecamatan_atribut_sumber,kecamatan_spatial_join,kelurahan_spatial_join,kabupaten_kota_spatial_join,lon,lat,status_kesesuaian
+0,1,2020,high,28,PONDOKGEDE,Bekasi Selatan,Jakasetia,Kota Bekasi,106.9771,-6.2784,tidak sesuai
+1,2,2020,medium,17,JATISAMPURNA,Jatisampurna,Jatirangga,Kota Bekasi,106.9271,-6.3556,sesuai
+2,3,2020,medium,17,PONDOKMELATI,Bantar Gebang,Bantargebang,Kota Bekasi,106.9869,-6.3074,tidak sesuai
+3,4,2020,medium,14,JATIASIH,Jatiasih,Jatisari,Kota Bekasi,106.9592,-6.3228,sesuai
+4,5,2020,medium,17,BANTARGEBANG,Bantar Gebang,Sumurbatu,Kota Bekasi,107.0036,-6.3434,sesuai
+5,6,2020,low,7,MUSTIKAJAYA,Mustika Jaya,Padurenan,Kota Bekasi,107.0142,-6.3119,sesuai
+6,7,2020,medium,14,BEKASI TIMUR,Bekasi Timur,Margahayu,Kota Bekasi,107.0081,-6.2473,sesuai
+7,8,2020,high,20,RAWALUMBU,Rawa Lumbu,Bojongrawalumbu,Kota Bekasi,107.0028,-6.2786,sesuai
+8,9,2020,medium,16,BEKASI SELATAN,Bekasi Selatan,Pekayonjaya,Kota Bekasi,106.9869,-6.2642,sesuai
+9,10,2020,high,25,BEKASI BARAT,Bekasi Barat,Kranji,Kota Bekasi,106.9695,-6.2315,sesuai
+10,11,2020,low,9,MEDANSATRIA,Bekasi Utara,Harapanjaya,Kota Bekasi,106.9959,-6.2069,tidak sesuai
+11,12,2020,low,10,BEKASI UTARA,Bekasi Utara,Harapanmulia,Kota Bekasi,107.0014,-6.2251,sesuai
+12,13,2026,low,2,PONDOKMELATI,Bantar Gebang,Bantargebang,Kota Bekasi,106.9869,-6.3074,tidak sesuai
+13,14,2026,low,4,RAWALUMBU,Rawa Lumbu,Bojongrawalumbu,Kota Bekasi,107.0028,-6.2786,sesuai
+14,15,2026,low,2,JATIASIH,Jatiasih,Jatisari,Kota Bekasi,106.9592,-6.3228,sesuai
+15,16,2026,low,7,BEKASI BARAT,Bekasi Barat,Kranji,Kota Bekasi,106.9695,-6.2315,sesuai
+16,17,2026,low,8,BEKASI UTARA,Bekasi Utara,Harapanmulia,Kota Bekasi,107.0014,-6.2251,sesuai
+17,18,2026,low,5,BEKASI TIMUR,Bekasi Timur,Margahayu,Kota Bekasi,107.0081,-6.2473,sesuai
+18,19,2021,medium,12,PONDOKGEDE,Pondok Gede,Jatimakmur,Kota Bekasi,106.9248,-6.2796,sesuai
+19,20,2021,low,10,JATIASIH,Jatiasih,Jatiasih,Kota Bekasi,106.9587,-6.3075,sesuai
+20,21,2021,low,8,BEKASI TIMUR,Bekasi Timur,Margahayu,Kota Bekasi,107.0142,-6.2514,sesuai
+21,22,2022,low,7,RAWALUMBU,Rawa Lumbu,Sepanjangjaya,Kota Bekasi,106.9924,-6.2687,sesuai
+22,23,2022,low,5,BEKASI BARAT,Bekasi Barat,Jakasampurna,Kota Bekasi,106.9745,-6.2411,sesuai
+23,24,2023,low,9,MUSTIKAJAYA,Mustika Jaya,Mustikajaya,Kota Bekasi,107.0354,-6.3001,sesuai
+24,25,2023,low,11,BEKASI UTARA,Bekasi Utara,Harapanjaya,Kota Bekasi,106.9961,-6.2155,sesuai
+25,26,2024,low,6,BANTARGEBANG,Bantar Gebang,Cikiwul,Kota Bekasi,106.9984,-6.3315,sesuai
+26,27,2024,low,4,MEDANSATRIA,Medan Satria,Medansatria,Kota Bekasi,106.9774,-6.1895,sesuai
+27,28,2025,medium,15,PONDOKMELATI,Pondok Melati,Jatiwarna,Kota Bekasi,106.9262,-6.3142,sesuai
+28,29,2025,low,8,JATISAMPURNA,Jatisampurna,Jatisampurna,Kota Bekasi,106.9202,-6.3601,sesuai
+29,30,2025,medium,18,BEKASI TIMUR,Bekasi Timur,Margahayu,Kota Bekasi,107.0081,-6.2473,sesuai
+30,31,2020,high,5,JATIASIH,Rawa Lumbu,Bojongmenteng,Kota Bekasi,106.9723,-6.3052,tidak sesuai
+31,32,2020,high,4,BEKASI BARAT,Bekasi Barat,Kranji,Kota Bekasi,106.9744,-6.2308,sesuai
+32,33,2021,medium,3,BEKASI TIMUR,Bekasi Timur,Durenjaya,Kota Bekasi,107.0211,-6.2398,sesuai
+33,34,2022,medium,2,RAWALUMBU,Rawa Lumbu,Pengasinan,Kota Bekasi,107.0016,-6.2719,sesuai
+34,35,2023,medium,3,BEKASI UTARA,Bekasi Utara,Kaliabangtengah,Kota Bekasi,107.0012,-6.1953,sesuai
+35,36,2024,high,4,JATIASIH,Jatiasih,Jatikramat,Kota Bekasi,106.9486,-6.2758,sesuai
+36,37,2025,medium,2,BEKASI BARAT,Bekasi Barat,Jakasampurna,Kota Bekasi,106.9691,-6.2415,sesuai
+37,38,2026,medium,2,BEKASI BARAT,Bekasi Barat,Jakasampurna,Kota Bekasi,106.9632,-6.2384,sesuai
+38,39,2026,low,1,BEKASI SELATAN,Bekasi Selatan,Pekayonjaya,Kota Bekasi,106.9854,-6.2621,sesuai
+39,40,2026,high,4,JATIASIH,Bantar Gebang,Bantargebang,Kota Bekasi,106.9731,-6.3075,tidak sesuai
+40,41,2020,medium,2,PONDOKMELATI,Pondok Melati,Jatiwarna,Kota Bekasi,106.9275,-6.3125,sesuai
+41,42,2020,medium,3,MEDANSATRIA,Medan Satria,Medansatria,Kota Bekasi,106.975,-6.185,sesuai
+42,43,2021,high,4,JATISAMPURNA,Jatisampurna,Jatiranggon,Kota Bekasi,106.931,-6.335,sesuai
+43,44,2021,low,1,BEKASI SELATAN,Bekasi Selatan,Jakasetia,Kota Bekasi,106.97,-6.265,sesuai
+44,45,2022,medium,2,BANTARGEBANG,Mustika Jaya,Cimuning,Kota Bekasi,107.015,-6.33,tidak sesuai
+45,46,2023,high,5,MUSTIKAJAYA,Mustika Jaya,Mustikajaya,Kota Bekasi,107.025,-6.295,sesuai
+46,47,2024,medium,3,PONDOKGEDE,Pondok Gede,Jatiwaringin,Kota Bekasi,106.915,-6.275,sesuai
+47,48,2025,high,4,BEKASI TIMUR,Bekasi Timur,Margahayu,Kota Bekasi,107.01,-6.25,sesuai
+48,49,2026,medium,2,BEKASI UTARA,Bekasi Utara,Harapanjaya,Kota Bekasi,106.99,-6.21,sesuai
+49,50,2026,high,4,JATIASIH,Jatiasih,Jatiasih,Kota Bekasi,106.96,-6.31,sesuai
+50,51,2020,high,4,JATIASIH,Jatiasih,Jatiasih,Kota Bekasi,106.953,-6.295,sesuai
+51,52,2020,medium,2,BEKASI TIMUR,Bekasi Timur,Margahayu,Kota Bekasi,107.009,-6.255,sesuai
+52,53,2020,high,3,MUSTIKAJAYA,Mustika Jaya,Mustikajaya,Kota Bekasi,107.021,-6.2855,sesuai
+53,54,2021,medium,2,BEKASI UTARA,Bekasi Utara,Harapanjaya,Kota Bekasi,107.0005,-6.215,sesuai
+54,55,2021,medium,2,BEKASI BARAT,Bekasi Barat,Bintara,Kota Bekasi,106.96,-6.23,sesuai
+55,56,2021,high,3,RAWALUMBU,Rawa Lumbu,Pengasinan,Kota Bekasi,107.005,-6.275,sesuai
+56,57,2022,medium,2,MEDANSATRIA,Medan Satria,Medansatria,Kota Bekasi,106.98,-6.195,sesuai
+57,58,2022,low,1,JATISAMPURNA,Jatisampurna,Jatisampurna,Kota Bekasi,106.92,-6.365,sesuai
+58,59,2022,medium,2,PONDOKGEDE,Pondok Gede,Jatibening,Kota Bekasi,106.935,-6.265,sesuai
+59,60,2023,low,1,BEKASI SELATAN,Bekasi Selatan,Pekayonjaya,Kota Bekasi,106.98,-6.26,sesuai
+60,61,2023,high,4,MUSTIKAJAYA,Mustika Jaya,Mustikajaya,Kota Bekasi,107.035,-6.305,sesuai
+61,62,2023,medium,2,BANTARGEBANG,Bantar Gebang,Sumurbatu,Kota Bekasi,107.01,-6.345,sesuai
+62,63,2024,high,3,JATIASIH,Jatiasih,Jatiasih,Kota Bekasi,106.96,-6.315,sesuai
+63,64,2024,medium,2,PONDOKMELATI,Pondok Melati,Jatiwarna,Kota Bekasi,106.93,-6.32,sesuai
+64,65,2024,low,1,BEKASI TIMUR,Bekasi Timur,Bekasijaya,Kota Bekasi,107.012,-6.242,sesuai
+65,66,2025,high,4,BEKASI UTARA,Bekasi Utara,Harapanjaya,Kota Bekasi,107.005,-6.205,sesuai
+66,67,2025,medium,2,RAWALUMBU,Rawa Lumbu,Bojongrawalumbu,Kota Bekasi,107.0,-6.28,sesuai
+67,68,2025,low,1,MEDANSATRIA,Bekasi Utara,Harapanjaya,Kota Bekasi,106.985,-6.21,tidak sesuai
+68,69,2026,medium,2,JATIASIH,Bekasi Selatan,Jakamulya,Kota Bekasi,106.965,-6.275,tidak sesuai
+69,70,2026,high,3,BEKASI BARAT,Bekasi Barat,Jakasampurna,Kota Bekasi,106.975,-6.245,sesuai

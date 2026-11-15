@@ -1,4 +1,132 @@
 /**
+ * Daftar 9 fitur wajib model Random Forest B-DRAIN sesuai urutan di backend Flask (ml/api.py).
+ */
+export const ML_FEATURE_COLUMNS = [
+  "shape_area",
+  "shape_leng",
+  "compactness",
+  "elev_mean",
+  "elev_min",
+  "sungai_density",
+  "dist_to_river",
+  "pct_pemukiman",
+  "pct_sawah",
+];
+
+/**
+ * Label resmi untuk membedakan estimasi lokal saat server API tidak aktif.
+ */
+export const OFFLINE_ESTIMATE_LABEL = "Estimasi Offline — Bukan Hasil Random Forest";
+
+/**
+ * Status validasi model yang ditampilkan di panel ML dan dashboard GIS.
+ * Harus selaras dengan MODEL_VALIDATION_STATUS di ml/api.py.
+ */
+export const ML_VALIDATION_STATUS = "Prototipe — Belum Tervalidasi";
+export const ML_VALIDATION_STATUS_UPPER = "PROTOTIPE — BELUM TERVALIDASI";
+
+/** Catatan resmi yang menyertai status validasi pada seluruh hasil klasifikasi dan informasi model. */
+export const ML_VALIDATION_NOTE =
+  "Model Random Forest ini merupakan prototipe penelitian yang menggunakan data dan label keparahan dengan keterbatasan dokumentasi sumber. Hasil prediksi digunakan untuk kebutuhan eksplorasi dan analisis, bukan sebagai kepastian kejadian banjir.";
+
+/** Pesan kesalahan standar yang ramah pengguna (Section 8). */
+export const ML_ERROR_MESSAGES = {
+  SERVICE_UNAVAILABLE: "Layanan prediksi tidak tersedia. Periksa koneksi ke server.",
+  INCOMPLETE_FEATURES: "Data fitur kelurahan belum lengkap.",
+  PREDICTION_FAILED: "Prediksi gagal diproses. Silakan coba kembali.",
+  NO_RESULT: "Hasil prediksi belum tersedia untuk kelurahan ini.",
+};
+
+/**
+ * Menormalisasi ID atau nama kelurahan ke format ID deterministik `KEL_<NAMA_UPPERCASE>`.
+ * Menangani perbedaan kapitalisasi, spasi berlebih, dan awalan `KEL_`.
+ *
+ * @param {string|null|undefined} rawIdOrName ID atau nama kelurahan.
+ * @returns {string} ID kelurahan terstandarisasi (contoh: "KEL_JATIKARYA"), atau string kosong jika tidak valid.
+ */
+export const normalizeKelurahanId = (rawIdOrName) => {
+  if (rawIdOrName === null || rawIdOrName === undefined) return "";
+  let raw = String(rawIdOrName).trim().toUpperCase();
+  if (!raw) return "";
+  if (raw.startsWith("KEL_")) {
+    raw = raw.slice(4).trim();
+  }
+  const cleaned = raw.replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return cleaned ? `KEL_${cleaned}` : "";
+};
+
+/**
+ * Mencari data kelurahan dari daftar 48 kelurahan Kota Bekasi berdasarkan `kelurahan_id` atau nama kelurahan.
+ * Menangani perbedaan huruf besar/kecil, spasi, maupun penulisan gabungan kata.
+ *
+ * @param {Array<object>} kelurahanList Daftar objek kelurahan (dari kelurahan_features_48.json).
+ * @param {string} idOrName `kelurahan_id` (misal "KEL_JATIKARYA") atau nama kelurahan (misal "Jatikarya").
+ * @param {string} [kecamatan] Opsional nama kecamatan untuk disambiguasi.
+ * @returns {object|null} Objek kelurahan yang cocok, atau null jika tidak ditemukan.
+ */
+export const findKelurahanByIdOrName = (kelurahanList, idOrName, kecamatan = "") => {
+  if (!Array.isArray(kelurahanList) || !kelurahanList.length || !idOrName) return null;
+  const targetId = normalizeKelurahanId(idOrName);
+  if (!targetId) return null;
+  const targetCompact = targetId.replace(/^KEL_/, "").replace(/_/g, "");
+  const normKec = String(kecamatan || "").trim().toLowerCase();
+
+  // 1. Pencocokan utama berdasarkan kelurahan_id yang ternormalisasi
+  const exactMatches = kelurahanList.filter((item) => {
+    const itemId = normalizeKelurahanId(item?.kelurahan_id || item?.id || item?.kelurahan || item?.NAMOBJ);
+    return itemId === targetId;
+  });
+
+  if (exactMatches.length === 1) return exactMatches[0];
+  if (exactMatches.length > 1 && normKec) {
+    const byKec = exactMatches.find(
+      (item) => String(item?.kecamatan || item?.WADMKC || "").trim().toLowerCase() === normKec
+    );
+    if (byKec) return byKec;
+  }
+  if (exactMatches.length > 0) return exactMatches[0];
+
+  // 2. Pencocokan toleran spasi/tanda hubung (contoh "Jati Karya" -> "JATIKARYA")
+  const compactMatches = kelurahanList.filter((item) => {
+    const itemId = normalizeKelurahanId(item?.kelurahan_id || item?.id || item?.kelurahan || item?.NAMOBJ);
+    const itemCompact = itemId.replace(/^KEL_/, "").replace(/_/g, "");
+    return itemCompact && itemCompact === targetCompact;
+  });
+
+  if (compactMatches.length === 1) return compactMatches[0];
+  if (compactMatches.length > 1 && normKec) {
+    const byKec = compactMatches.find(
+      (item) => String(item?.kecamatan || item?.WADMKC || "").trim().toLowerCase() === normKec
+    );
+    if (byKec) return byKec;
+  }
+  return compactMatches[0] || null;
+};
+
+/**
+ * Memformat probabilitas keluaran model (`sedang` dan `tinggi`) ke dalam persentase yang konsisten.
+ *
+ * @param {{sedang?: number, tinggi?: number}|null|undefined} probabilities Objek probabilitas dari API.
+ * @returns {{sedangProb: number, tinggiProb: number, sedangPct: string, tinggiPct: string, totalPct: number}}
+ */
+export const formatModelProbabilities = (probabilities) => {
+  const rawSedang = Number(probabilities?.sedang);
+  const rawTinggi = Number(probabilities?.tinggi);
+  const sedangProb = Number.isFinite(rawSedang) && rawSedang >= 0 ? rawSedang : 0;
+  const tinggiProb = Number.isFinite(rawTinggi) && rawTinggi >= 0 ? rawTinggi : 0;
+  const sum = sedangProb + tinggiProb;
+  const normSedang = sum > 0 ? (sedangProb / sum) * 100 : 0;
+  const normTinggi = sum > 0 ? (tinggiProb / sum) * 100 : 0;
+  return {
+    sedangProb: sum > 0 ? sedangProb / sum : 0,
+    tinggiProb: sum > 0 ? tinggiProb / sum : 0,
+    sedangPct: normSedang.toFixed(1),
+    tinggiPct: normTinggi.toFixed(1),
+    totalPct: Number((normSedang + normTinggi).toFixed(1)),
+  };
+};
+
+/**
  * Menghitung jarak lingkaran besar (great-circle) antara dua titik koordinat
  * menggunakan rumus haversine.
  *
@@ -10,7 +138,6 @@
  */
 export const haversine = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
-  // Konversi derajat ke radian.
   const toRad = (d) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
@@ -22,10 +149,6 @@ export const haversine = (lat1, lon1, lat2, lon2) => {
 
 /**
  * Mencari rumah sakit terdekat dari sebuah titik dalam kumpulan fitur GeoJSON.
- * Koordinat setiap fitur dibaca sebagai [bujur, lintang] sesuai standar GeoJSON.
- * Nama dan alamat diambil dari properti dengan beberapa kemungkinan nama field
- * (huruf kecil, huruf besar, atau bahasa Inggris). Jika tidak ditemukan, nama
- * diisi "Rumah Sakit" dan alamat diisi string kosong.
  *
  * @param {number} lat - Lintang titik acuan.
  * @param {number} lon - Bujur titik acuan.
@@ -57,10 +180,9 @@ export const getNearestHospital = (lat, lon, hospitalGeoJson) => {
 
 /**
  * Memperkirakan durasi genangan berdasarkan kelas risiko dan elevasi.
- * Semakin rendah elevasi pada kelas "tinggi", semakin lama air surut.
  *
- * @param {string} riskClass - Kelas risiko: "tinggi", "sedang", atau nilai lain (diperlakukan sebagai rendah).
- * @param {number} elev - Elevasi rata-rata (elev_mean) yang dipakai sebagai ambang batas.
+ * @param {string} riskClass - Kelas risiko: "tinggi", "sedang", atau nilai lain.
+ * @param {number} elev - Elevasi rata-rata (elev_mean) dalam meter.
  * @returns {string} Estimasi durasi genangan dalam teks Bahasa Indonesia.
  */
 export const getFloodDuration = (riskClass, elev) => {
@@ -79,11 +201,10 @@ export const getFloodDuration = (riskClass, elev) => {
 };
 
 /**
- * Menyusun saran evakuasi beserta tingkat urgensi dan warna tampilan
- * berdasarkan kelas risiko.
+ * Menyusun saran evakuasi beserta tingkat urgensi dan warna tampilan berdasarkan kelas risiko.
  *
- * @param {string} riskClass - Kelas risiko: "tinggi", "sedang", atau nilai lain (diperlakukan sebagai rendah).
- * @returns {{urgency: string, text: string, color: string, bg: string}} Objek berisi label urgensi, teks saran, warna teks (hex), dan warna latar (hex).
+ * @param {string} riskClass - Kelas risiko: "tinggi", "sedang", atau nilai lain.
+ * @returns {{urgency: string, text: string, color: string, bg: string}}
  */
 export const getEvacuationAdvice = (riskClass) => {
   if (riskClass === "tinggi") {
@@ -124,8 +245,8 @@ export const severityToScore = (severity) =>
 /**
  * Mengembalikan warna penanda peta untuk kelas risiko tertentu.
  *
- * @param {string} riskClass - Kelas risiko: "tinggi", "sedang", atau nilai lain (diperlakukan sebagai rendah).
- * @returns {string} Kode warna heksadesimal: merah untuk "tinggi", oranye untuk "sedang", dan hijau untuk lainnya.
+ * @param {string} riskClass - Kelas risiko: "tinggi", "sedang", atau nilai lain.
+ * @returns {string} Kode warna heksadesimal.
  */
 export const classColor = (riskClass) => {
   if (riskClass === "tinggi") return "#dc2626";
@@ -134,77 +255,279 @@ export const classColor = (riskClass) => {
 };
 
 /**
- * Menyusun payload fitur untuk dikirim ke endpoint prediksi ML.
- * Hanya field "elev_mean" dan "elev_min" yang berasal dari input form.
- * Field lainnya adalah nilai tetap (konstanta) yang ditulis langsung di fungsi ini.
+ * Mengekstrak 9 fitur spasial & topografi dari objek data kelurahan Kota Bekasi.
+ * Tidak menggunakan nilai konstanta palsu apabila fitur tidak tersedia.
  *
- * Catatan: parameter "lat" dan "lon" diterima tetapi tidak dipakai di dalam fungsi.
- *
- * @param {object} params - Parameter fungsi.
- * @param {number} params.lat - Lintang titik yang dipilih (saat ini tidak dipakai).
- * @param {number} params.lon - Bujur titik yang dipilih (saat ini tidak dipakai).
- * @param {{elev_mean: number}} params.mlForm - Data input form, berisi elevasi rata-rata.
- * @returns {{elev_mean: number, elev_min: number, sungai_density: number, dist_to_river: number, pct_pemukiman: number, pct_sawah: number, shape_area: number, shape_leng: number, compactness: number}} Payload fitur model.
+ * @param {object|null} kelurahanObj Objek kelurahan dari kelurahan_kota_bekasi_48.geojson atau kelurahan_features_48.json.
+ * @returns {object|null} Objek berisi 9 fitur numerik jika lengkap, atau null jika tidak lengkap.
  */
-export const buildMlPayload = ({ lat, lon, mlForm }) => ({
-  // Elevasi minimum diperkirakan 3 satuan di bawah rata-rata, dengan batas bawah 0.
-  elev_mean: mlForm.elev_mean,
-  elev_min: Math.max(0, mlForm.elev_mean - 3),
-  sungai_density: 0.08,
-  dist_to_river: 0.005,
-  pct_pemukiman: 0.65,
-  pct_sawah: 0.05,
-  shape_area: 0.0005,
-  shape_leng: 0.15,
-  compactness: 0.28,
-  // centroid removed to avoid spatial overfitting; use aggregated spatial features instead
-});
+export const extractKelurahanFeatures = (kelurahanObj) => {
+  if (!kelurahanObj || typeof kelurahanObj !== "object") return null;
+  const source = kelurahanObj.features && typeof kelurahanObj.features === "object"
+    ? kelurahanObj.features
+    : kelurahanObj;
+
+  const extracted = {};
+  for (const col of ML_FEATURE_COLUMNS) {
+    const raw = source[col];
+    if (raw === undefined || raw === null || raw === "") {
+      return null;
+    }
+    const num = Number(raw);
+    if (!Number.isFinite(num)) {
+      return null;
+    }
+    extracted[col] = num;
+  }
+  return extracted;
+};
 
 /**
- * Menghitung estimasi risiko banjir secara lokal (offline) sebagai cadangan
- * ketika layanan prediksi ML tidak tersedia. Hasil bersifat demo dan
- * ditandai dengan model_version "offline-demo-v1".
+ * Memvalidasi apakah sebuah payload prediksi ML memiliki seluruh 9 fitur yang valid.
  *
- * Skor mentah dihitung dari tiga komponen:
- * - elevasi rendah (dibatasi 0 sampai 12, dikali 2),
- * - persentase pemukiman (dikali 40, dibatasi 0 sampai 18),
- * - kepadatan sungai (dikali 120, dibatasi 0 sampai 12).
- * Skor akhir dibatasi pada rentang 1 sampai 100.
- * Kelas: skor >= 67 "tinggi", skor >= 40 "sedang", selain itu "rendah".
+ * @param {object|null} payload Objek payload fitur.
+ * @returns {{valid: boolean, missingFields: string[]}}
+ */
+export const validateMlPayloadCompleteness = (payload) => {
+  if (!payload || typeof payload !== "object") {
+    return { valid: false, missingFields: [...ML_FEATURE_COLUMNS] };
+  }
+  const missingFields = ML_FEATURE_COLUMNS.filter((col) => {
+    const val = payload[col];
+    return val === undefined || val === null || val === "" || !Number.isFinite(Number(val));
+  });
+  return {
+    valid: missingFields.length === 0,
+    missingFields,
+  };
+};
+
+/**
+ * Menyusun payload 9 fitur untuk dikirim ke endpoint prediksi ML (/api/predict atau /api/predict/batch)
+ * berdasarkan data fitur aktual kelurahan di Kota Bekasi (bukan konstanta statis).
  *
- * @param {object} payload - Payload hasil buildMlPayload.
- * @param {number} [payload.elev_mean] - Elevasi rata-rata.
- * @param {number} [payload.pct_pemukiman] - Proporsi area pemukiman (0 sampai 1).
- * @param {number} [payload.sungai_density] - Kepadatan sungai.
- * @returns {{predicted_class: string, risk_score: number, confidence: number, probabilities: {tinggi: number, sedang: number, rendah: number}, model_version: string}} Hasil estimasi. Nilai confidence berada pada skala 0 sampai 1, sedangkan probabilities dinormalisasi agar berjumlah 1.
+ * Jika `overrideElevation` diaktifkan (misalnya pada simulasi titik tunggal ketika pengguna mengubah
+ * nilai `elev_mean` di form), maka `elev_mean` mengikuti input pengguna dan `elev_min` disesuaikan
+ * secara proporsional tanpa mengubah 7 fitur spasial asli kelurahan tersebut.
+ *
+ * Jika `kelurahanProps` tidak tersedia atau tidak memiliki 9 fitur lengkap, fungsi mengembalikan `null`
+ * agar pemanggil tidak mengirimkan nilai konstanta palsu ke backend.
+ *
+ * @param {object} params Parameter pembentukan payload.
+ * @param {object|null} params.kelurahanProps Objek properti/fitur kelurahan Kota Bekasi.
+ * @param {{elev_mean?: number}} [params.mlForm] Input form pengguna (opsional untuk override elevasi).
+ * @param {boolean} [params.overrideElevation=false] Jika true, gunakan mlForm.elev_mean bila berbeda dari data dasar.
+ * @returns {object|null} Payload lengkap 9 fitur + identitas kelurahan, atau null jika fitur tidak tersedia.
+ */
+export const buildMlPayload = ({ kelurahanProps, mlForm, overrideElevation = false } = {}) => {
+  const baseFeatures = extractKelurahanFeatures(kelurahanProps);
+  if (!baseFeatures) {
+    return null;
+  }
+
+  let elevMean = baseFeatures.elev_mean;
+  let elevMin = baseFeatures.elev_min;
+
+  if (
+    overrideElevation &&
+    mlForm &&
+    typeof mlForm.elev_mean === "number" &&
+    Number.isFinite(mlForm.elev_mean) &&
+    mlForm.elev_mean >= 0
+  ) {
+    const delta = mlForm.elev_mean - baseFeatures.elev_mean;
+    elevMean = Number(mlForm.elev_mean);
+    elevMin = Math.max(0, Math.min(elevMean, Number((baseFeatures.elev_min + delta).toFixed(4))));
+  }
+
+  const kelurahanName =
+    kelurahanProps?.kelurahan ||
+    kelurahanProps?.kelurahan_name ||
+    kelurahanProps?.NAMOBJ ||
+    kelurahanProps?.kel_key ||
+    "";
+  const kelurahanId = normalizeKelurahanId(
+    kelurahanProps?.kelurahan_id || kelurahanProps?.id || kelurahanName
+  );
+  const kecamatanName =
+    kelurahanProps?.kecamatan ||
+    kelurahanProps?.WADMKC ||
+    "";
+  const wadmkkName =
+    kelurahanProps?.wadmkk ||
+    kelurahanProps?.WADMKK ||
+    "Kota Bekasi";
+
+  return {
+    ...(kelurahanId ? { kelurahan_id: kelurahanId } : {}),
+    ...(kelurahanName ? { kelurahan: String(kelurahanName), kelurahan_name: String(kelurahanName) } : {}),
+    ...(kecamatanName ? { kecamatan: String(kecamatanName) } : {}),
+    ...(wadmkkName ? { wadmkk: String(wadmkkName) } : {}),
+    shape_area: baseFeatures.shape_area,
+    shape_leng: baseFeatures.shape_leng,
+    compactness: baseFeatures.compactness,
+    elev_mean: elevMean,
+    elev_min: elevMin,
+    sungai_density: baseFeatures.sungai_density,
+    dist_to_river: baseFeatures.dist_to_river,
+    pct_pemukiman: baseFeatures.pct_pemukiman,
+    pct_sawah: baseFeatures.pct_sawah,
+  };
+};
+
+/**
+ * Menghitung estimasi risiko banjir secara lokal (offline) ketika server backend Flask tidak aktif.
+ *
+ * PENTING: Hasil fungsi ini BUKAN keluaran model Random Forest, melainkan rumus heuristik lokal
+ * yang diberi label eksplisit "Estimasi Offline — Bukan Hasil Random Forest".
+ *
+ * @param {object} payload Payload fitur kelurahan (dalam satuan meter UTM dan rasio [0,1]).
+ * @returns {object} Objek hasil estimasi offline dengan penanda `is_offline: true`.
  */
 export const buildOfflineRiskEstimate = (payload) => {
-  // Membatasi nilai v agar tetap berada di rentang min sampai max.
+  if (!payload || typeof payload !== "object") return null;
   const bounded = (v, min, max) => Math.min(max, Math.max(min, v));
 
-  const scoreRaw =
-    bounded(12 - (payload.elev_mean || 0), 0, 12) * 2 +
-    bounded((payload.pct_pemukiman || 0) * 40, 0, 18) +
-    bounded((payload.sungai_density || 0) * 120, 0, 12);
+  // Skala sesuai satuan fitur kelurahan Kota Bekasi:
+  // elev_mean ~ 6 - 70 m dpl, pct_pemukiman ~ 0.1 - 0.97, sungai_density ~ 0.0004 - 0.008 m/m2, dist_to_river ~ 4 - 1022 m
+  const elevMean = Number(payload.elev_mean ?? 25);
+  const pctPemukiman = Number(payload.pct_pemukiman ?? 0.5);
+  const sungaiDensity = Number(payload.sungai_density ?? 0.0015);
+  const distToRiver = Number(payload.dist_to_river ?? 300);
 
+  const elevComponent = bounded((35 - elevMean) * 1.2, 0, 38);
+  const pemukimanComponent = bounded(pctPemukiman * 35, 0, 32);
+  const densityComponent = bounded(sungaiDensity * 4500, 0, 18);
+  const proximityComponent = bounded(((600 - distToRiver) / 600) * 12, 0, 12);
+
+  const scoreRaw = elevComponent + pemukimanComponent + densityComponent + proximityComponent;
   const riskScore = Math.round(bounded(scoreRaw, 1, 100));
-  const predictedClass = riskScore >= 67 ? 'tinggi' : riskScore >= 40 ? 'sedang' : 'rendah';
+  const predictedClass = riskScore >= 55 ? "tinggi" : "sedang";
 
-  // Bobot kedekatan skor terhadap masing-masing kelas, sebelum dinormalisasi.
-  const high = bounded((riskScore - 35) / 65, 0, 1);
-  const low = bounded((60 - riskScore) / 60, 0, 1);
-  const medium = bounded(1 - Math.abs(riskScore - 50) / 50, 0, 1);
-  const total = high + medium + low;
+  const high = bounded((riskScore - 25) / 55, 0.05, 0.95);
+  const medium = bounded(1 - high, 0.05, 0.95);
+  const total = high + medium || 1;
 
   return {
     predicted_class: predictedClass,
     risk_score: riskScore,
-    confidence: Number((0.62 + bounded(Math.abs(riskScore - 50) / 120, 0, 0.25)).toFixed(3)),
+    confidence: Number(((0.55 + bounded(Math.abs(riskScore - 55) / 150, 0, 0.3)) * 100).toFixed(1)),
     probabilities: {
-      tinggi: Number((high / total).toFixed(3)),
       sedang: Number((medium / total).toFixed(3)),
-      rendah: Number((low / total).toFixed(3)),
+      tinggi: Number((high / total).toFixed(3)),
     },
-    model_version: 'offline-demo-v1',
+    is_offline: true,
+    source_label: OFFLINE_ESTIMATE_LABEL,
+    model_version: "offline-demo-v1",
+    validation_status: OFFLINE_ESTIMATE_LABEL,
   };
 };
+
+/**
+ * Memperkaya hasil batch prediksi dari backend dengan metadata kelurahan serta
+ * memastikan tidak ada `kelurahan_id` duplikat yang sukses dua kali atau menimpa hasil
+ * secara diam-diam dalam satu permintaan batch.
+ *
+ * Jika satu `kelurahan_id` muncul lebih dari satu kali dalam satu batch:
+ * - Kemunculan pertama tetap diproses sesuai statusnya.
+ * - Kemunculan berikutnya ditandai `success: false` dengan `code: "DUPLICATE_KELURAHAN_ID"`
+ *   dan pesan error eksplisit.
+ *
+ * @param {Array<object>} rawResults Array `results` dari respons `/api/predict/batch`.
+ * @param {Array<object>} targetKelurahan Daftar kelurahan sumber.
+ * @returns {Array<object>} Daftar hasil batch yang telah diperkaya dan dideduplikasi.
+ */
+export const enrichAndDeduplicateBatchResults = (rawResults, targetKelurahan = []) => {
+  if (!Array.isArray(rawResults)) return [];
+  const seenKelurahanIds = new Map();
+
+  return rawResults.map((row, idx) => {
+    const sourceIndex = typeof row?.index === "number" ? row.index : idx;
+    const sourceKel =
+      findKelurahanByIdOrName(
+        targetKelurahan,
+        row?.kelurahan_id || row?.id || row?.kelurahan,
+        row?.kecamatan
+      ) || {};
+    const kelId = normalizeKelurahanId(
+      row?.kelurahan_id || sourceKel.kelurahan_id || row?.id || sourceKel.kelurahan
+    );
+    const lat = Number(sourceKel.centroid_lat ?? row?.lat);
+    const lng = Number(sourceKel.centroid_lng ?? row?.lng);
+    const jumlahTitik = Number(sourceKel.jumlah_titik_akumulasi ?? 0);
+
+    let isSuccess = Boolean(row?.success);
+    let errorMsg = row?.error || null;
+    let errorCode = row?.code || null;
+    let duplicateOfIndex = row?.duplicate_of_index ?? null;
+
+    if (kelId) {
+      if (seenKelurahanIds.has(kelId)) {
+        const firstIdx = seenKelurahanIds.get(kelId);
+        isSuccess = false;
+        errorCode = "DUPLICATE_KELURAHAN_ID";
+        duplicateOfIndex = firstIdx;
+        errorMsg =
+          row?.code === "DUPLICATE_KELURAHAN_ID" && row?.error
+            ? row.error
+            : `ID kelurahan duplikat dalam satu permintaan batch: '${kelId}' (sudah ada pada indeks ${firstIdx}). Hanya kemunculan pertama yang diproses.`;
+      } else {
+        seenKelurahanIds.set(kelId, sourceIndex);
+      }
+    }
+
+    const priorityScore = isSuccess
+      ? ((row?.risk_score || 0) * 0.65) + ((row?.confidence || 0) * 0.2) + (jumlahTitik * 0.15)
+      : 0;
+
+    return {
+      ...row,
+      success: isSuccess,
+      ...(errorMsg ? { error: errorMsg } : {}),
+      ...(errorCode ? { code: errorCode } : {}),
+      ...(duplicateOfIndex !== null ? { duplicate_of_index: duplicateOfIndex } : {}),
+      ...(isSuccess ? {} : { predicted_class: undefined, risk_score: undefined, probabilities: undefined }),
+      index: sourceIndex,
+      id: kelId || row?.id || `item-${sourceIndex}`,
+      kelurahan_id: kelId,
+      kelurahan_name: row?.kelurahan_name || row?.kelurahan || sourceKel.kelurahan || "-",
+      kelurahan: row?.kelurahan || row?.kelurahan_name || sourceKel.kelurahan || "-",
+      kecamatan: row?.kecamatan || sourceKel.kecamatan || "-",
+      nama_kecamatan: sourceKel.kecamatan || row?.kecamatan || "-",
+      lat,
+      lng,
+      jumlah_titik: jumlahTitik,
+      n_points: sourceKel.n_points || 0,
+      has_flood_label: Boolean(sourceKel.has_flood_label),
+      label_status: sourceKel.label_status || "",
+      historical_class: sourceKel.label_B || sourceKel.severity_max_raw || "Tidak Berlabel",
+      priority_score: Number(priorityScore.toFixed(2)),
+    };
+  });
+};
+
+/**
+ * Menghitung ringkasan hasil prediksi batch tanpa menghitung ganda kelurahan duplikat atau item gagal.
+ *
+ * @param {Array<object>} enrichedResults Hasil dari `enrichAndDeduplicateBatchResults`.
+ * @returns {{total: number, success: number, failed: number, high: number, medium: number, avgRiskScore: string}}
+ */
+export const summarizeBatchResults = (enrichedResults = []) => {
+  const rows = Array.isArray(enrichedResults) ? enrichedResults : [];
+  const successRows = rows.filter((r) => r && r.success);
+  const highCount = successRows.filter((r) => r.predicted_class === "tinggi").length;
+  const mediumCount = successRows.filter((r) => r.predicted_class === "sedang").length;
+  const avgRiskScore = successRows.length
+    ? (successRows.reduce((sum, row) => sum + (Number(row.risk_score) || 0), 0) / successRows.length).toFixed(1)
+    : "0.0";
+
+  return {
+    total: rows.length,
+    success: successRows.length,
+    failed: rows.length - successRows.length,
+    high: highCount,
+    medium: mediumCount,
+    avgRiskScore,
+  };
+};
+

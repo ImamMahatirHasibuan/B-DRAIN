@@ -3,13 +3,19 @@
  * Berkas ini mengatur plugin React, perlakuan aset GeoJSON, pemecahan chunk saat build,
  * konfigurasi pengujian Vitest, dan opsi JSON.
  */
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+
+const setupFilePath = fileURLToPath(new URL('./src/test/setup.js', import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
   // Plugin resmi @vitejs/plugin-react untuk transformasi JSX dan Fast Refresh.
   plugins: [react()],
+  resolve: {
+    preserveSymlinks: true,
+  },
   // Memperlakukan berkas .geojson sebagai aset statis sehingga dapat di-import sebagai URL.
   assetsInclude: ['**/*.geojson'],
   build: {
@@ -49,7 +55,7 @@ export default defineConfig({
     // Lingkungan DOM simulasi (jsdom) agar komponen React dapat diuji di Node.
     environment: 'jsdom',
     // Berkas setup yang dijalankan sebelum setiap berkas pengujian (src/test/setup.js).
-    setupFiles: './src/test/setup.js',
+    setupFiles: [setupFilePath],
   },
   // Opsi perilaku JSON. Nilai stringify: false berarti isi berkas JSON diubah menjadi
   // literal objek JavaScript, bukan dimuat lewat JSON.parse dari string.

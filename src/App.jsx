@@ -87,58 +87,59 @@ function App() {
   // Dataset utama yang dapat diunduh dari modal. Path mengacu ke folder public/data.
   const datasets = [
     { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: '70 titik rawan banjir di 12 kecamatan Kota Bekasi', path: '/data/data_banjir.geojson' },
-    { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Sungai Utama / infrastruktur air (OpenStreetMap)',   path: '/data/export.geojson' },
+    { name: 'kelurahan_kota_bekasi_48.geojson',                   type: 'GeoJSON', desc: '48 kelurahan wilayah administratif Kota Bekasi beserta 9 fitur spasial', path: '/data/kelurahan_kota_bekasi_48.geojson' },
+    { name: 'export.geojson',                                     type: 'GeoJSON', desc: 'Sungai Utama / jaringan sungai Kota Bekasi (BIG 1:25.000 / SUNGAI_LN_25K)',   path: '/data/export.geojson' },
     { name: 'sebaran-rumah-sakit-jawa-barat.geojson',             type: 'GeoJSON', desc: 'Sebaran fasilitas kesehatan Jawa Barat',            path: '/data/sebaran-rumah-sakit-jawa-barat.geojson' },
   ];
 
   // Layer Topografi BIG 1:25.000 dikelompokkan per group (warna dipakai sebagai aksen judul grup).
-  // Path mengacu ke public/data/geojson_kota_bekasi.
+  // Path mengacu ke public/data/geojson_kota_bekasi/geojson_kota_bekasi.
   const topoDatasets = [
     { group: 'Topografi', color: '#b45309', items: [
-      { name: 'KONTUR_LN_25K.geojson',     desc: 'Garis kontur elevasi',        path: '/data/geojson_kota_bekasi/KONTUR_LN_25K.geojson' },
-      { name: 'SPOTHEIGHT_PT_25K.geojson', desc: 'Titik ketinggian (spot height)', path: '/data/geojson_kota_bekasi/SPOTHEIGHT_PT_25K.geojson' },
+      { name: 'KONTUR_LN_25K.geojson',     desc: 'Garis kontur elevasi',        path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KONTUR_LN_25K.geojson' },
+      { name: 'SPOTHEIGHT_PT_25K.geojson', desc: 'Titik ketinggian (spot height)', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SPOTHEIGHT_PT_25K.geojson' },
     ]},
     { group: 'Perairan', color: '#0ea5e9', items: [
-      { name: 'SUNGAI_LN_25K.geojson',  desc: 'Jaringan sungai (garis)',  path: '/data/geojson_kota_bekasi/SUNGAI_LN_25K.geojson' },
-      { name: 'SUNGAI_AR_25K.geojson',  desc: 'Area sungai (poligon)',    path: '/data/geojson_kota_bekasi/SUNGAI_AR_25K.geojson' },
-      { name: 'DANAU_AR_25K.geojson',   desc: 'Area danau / waduk',       path: '/data/geojson_kota_bekasi/DANAU_AR_25K.geojson' },
-      { name: 'TAMBANGAN_LN_25K.geojson', desc: 'Jalur tambangan/penyeberangan', path: '/data/geojson_kota_bekasi/TAMBANGAN_LN_25K.geojson' },
+      { name: 'SUNGAI_LN_25K.geojson',  desc: 'Jaringan sungai (garis)',  path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SUNGAI_LN_25K.geojson' },
+      { name: 'SUNGAI_AR_25K.geojson',  desc: 'Area sungai (poligon)',    path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SUNGAI_AR_25K.geojson' },
+      { name: 'DANAU_AR_25K.geojson',   desc: 'Area danau / waduk',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/DANAU_AR_25K.geojson' },
+      { name: 'TAMBANGAN_LN_25K.geojson', desc: 'Jalur tambangan/penyeberangan', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/TAMBANGAN_LN_25K.geojson' },
     ]},
     { group: 'Vegetasi', color: '#78350f', items: [
-      { name: 'NONAGRIALANG_AR_25K.geojson',        desc: 'Area alang-alang',   path: '/data/geojson_kota_bekasi/NONAGRIALANG_AR_25K.geojson' },
-      { name: 'NONAGRISEMAKBELUKAR_AR_25K.geojson', desc: 'Area semak belukar', path: '/data/geojson_kota_bekasi/NONAGRISEMAKBELUKAR_AR_25K.geojson' },
+      { name: 'NONAGRIALANG_AR_25K.geojson',        desc: 'Area alang-alang',   path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/NONAGRIALANG_AR_25K.geojson' },
+      { name: 'NONAGRISEMAKBELUKAR_AR_25K.geojson', desc: 'Area semak belukar', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/NONAGRISEMAKBELUKAR_AR_25K.geojson' },
     ]},
     { group: 'Permukiman', color: '#be123c', items: [
-      { name: 'PEMUKIMAN_AR_25K.geojson',  desc: 'Area permukiman',        path: '/data/geojson_kota_bekasi/PEMUKIMAN_AR_25K.geojson' },
-      { name: 'BANGUNAN_AR_25K.geojson',   desc: 'Bangunan (poligon)',     path: '/data/geojson_kota_bekasi/BANGUNAN_AR_25K.geojson' },
-      { name: 'BANGUNAN_PT_25K.geojson',   desc: 'Bangunan (titik)',       path: '/data/geojson_kota_bekasi/BANGUNAN_PT_25K.geojson' },
+      { name: 'PEMUKIMAN_AR_25K.geojson',  desc: 'Area permukiman',        path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/PEMUKIMAN_AR_25K.geojson' },
+      { name: 'BANGUNAN_AR_25K.geojson',   desc: 'Bangunan (poligon)',     path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/BANGUNAN_AR_25K.geojson' },
+      { name: 'BANGUNAN_PT_25K.geojson',   desc: 'Bangunan (titik)',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/BANGUNAN_PT_25K.geojson' },
     ]},
     { group: 'Transportasi', color: '#d97706', items: [
-      { name: 'JALAN_LN_25K.geojson',      desc: 'Jaringan jalan',         path: '/data/geojson_kota_bekasi/JALAN_LN_25K.geojson' },
-      { name: 'RELKA_LN_25K.geojson',      desc: 'Rel kereta api',         path: '/data/geojson_kota_bekasi/RELKA_LN_25K.geojson' },
-      { name: 'JEMBATAN_LN_25K.geojson',   desc: 'Jembatan (garis)',       path: '/data/geojson_kota_bekasi/JEMBATAN_LN_25K.geojson' },
-      { name: 'JEMBATAN_PT_25K.geojson',   desc: 'Jembatan (titik)',       path: '/data/geojson_kota_bekasi/JEMBATAN_PT_25K.geojson' },
-      { name: 'STASIUNKA_PT_25K.geojson',  desc: 'Stasiun kereta api',     path: '/data/geojson_kota_bekasi/STASIUNKA_PT_25K.geojson' },
+      { name: 'JALAN_LN_25K.geojson',      desc: 'Jaringan jalan',         path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/JALAN_LN_25K.geojson' },
+      { name: 'RELKA_LN_25K.geojson',      desc: 'Rel kereta api',         path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/RELKA_LN_25K.geojson' },
+      { name: 'JEMBATAN_LN_25K.geojson',   desc: 'Jembatan (garis)',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/JEMBATAN_LN_25K.geojson' },
+      { name: 'JEMBATAN_PT_25K.geojson',   desc: 'Jembatan (titik)',       path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/JEMBATAN_PT_25K.geojson' },
+      { name: 'STASIUNKA_PT_25K.geojson',  desc: 'Stasiun kereta api',     path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/STASIUNKA_PT_25K.geojson' },
     ]},
     { group: 'Administrasi', color: '#7c3aed', items: [
-      { name: 'ADMINISTRASI_LN_25K.geojson',     desc: 'Batas administrasi',     path: '/data/geojson_kota_bekasi/ADMINISTRASI_LN_25K.geojson' },
-      { name: 'ADMINISTRASIDESA_AR_25K.geojson', desc: 'Batas desa/kelurahan',   path: '/data/geojson_kota_bekasi/ADMINISTRASIDESA_AR_25K.geojson' },
-      { name: 'TOPONIMI_PT_25K.geojson',         desc: 'Nama tempat (toponimi)', path: '/data/geojson_kota_bekasi/TOPONIMI_PT_25K.geojson' },
-      { name: 'TONGGAKKM_PT_25K.geojson',        desc: 'Tonggak kilometer',      path: '/data/geojson_kota_bekasi/TONGGAKKM_PT_25K.geojson' },
+      { name: 'ADMINISTRASI_LN_25K.geojson',     desc: 'Batas administrasi',     path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/ADMINISTRASI_LN_25K.geojson' },
+      { name: 'ADMINISTRASIDESA_AR_25K.geojson', desc: 'Batas desa/kelurahan',   path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/ADMINISTRASIDESA_AR_25K.geojson' },
+      { name: 'TOPONIMI_PT_25K.geojson',         desc: 'Nama tempat (toponimi)', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/TOPONIMI_PT_25K.geojson' },
+      { name: 'TONGGAKKM_PT_25K.geojson',        desc: 'Tonggak kilometer',      path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/TONGGAKKM_PT_25K.geojson' },
     ]},
     { group: 'Fasilitas Umum', color: '#059669', items: [
-      { name: 'KESEHATAN_PT_25K.geojson',    desc: 'Fasilitas kesehatan',    path: '/data/geojson_kota_bekasi/KESEHATAN_PT_25K.geojson' },
-      { name: 'PENDIDIKAN_PT_25K.geojson',   desc: 'Fasilitas pendidikan',   path: '/data/geojson_kota_bekasi/PENDIDIKAN_PT_25K.geojson' },
-      { name: 'PEMERINTAHAN_PT_25K.geojson', desc: 'Kantor pemerintahan',    path: '/data/geojson_kota_bekasi/PEMERINTAHAN_PT_25K.geojson' },
-      { name: 'SARANAIBADAH_PT_25K.geojson', desc: 'Sarana ibadah',          path: '/data/geojson_kota_bekasi/SARANAIBADAH_PT_25K.geojson' },
-      { name: 'KANTORPOS_PT_25K.geojson',    desc: 'Kantor pos',             path: '/data/geojson_kota_bekasi/KANTORPOS_PT_25K.geojson' },
-      { name: 'NIAGA_PT_25K.geojson',        desc: 'Niaga / komersial',      path: '/data/geojson_kota_bekasi/NIAGA_PT_25K.geojson' },
-      { name: 'CAGARBUDAYA_PT_25K.geojson',  desc: 'Cagar budaya',           path: '/data/geojson_kota_bekasi/CAGARBUDAYA_PT_25K.geojson' },
+      { name: 'KESEHATAN_PT_25K.geojson',    desc: 'Fasilitas kesehatan',    path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KESEHATAN_PT_25K.geojson' },
+      { name: 'PENDIDIKAN_PT_25K.geojson',   desc: 'Fasilitas pendidikan',   path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/PENDIDIKAN_PT_25K.geojson' },
+      { name: 'PEMERINTAHAN_PT_25K.geojson', desc: 'Kantor pemerintahan',    path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/PEMERINTAHAN_PT_25K.geojson' },
+      { name: 'SARANAIBADAH_PT_25K.geojson', desc: 'Sarana ibadah',          path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/SARANAIBADAH_PT_25K.geojson' },
+      { name: 'KANTORPOS_PT_25K.geojson',    desc: 'Kantor pos',             path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KANTORPOS_PT_25K.geojson' },
+      { name: 'NIAGA_PT_25K.geojson',        desc: 'Niaga / komersial',      path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/NIAGA_PT_25K.geojson' },
+      { name: 'CAGARBUDAYA_PT_25K.geojson',  desc: 'Cagar budaya',           path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/CAGARBUDAYA_PT_25K.geojson' },
     ]},
     { group: 'Utilitas', color: '#ca8a04', items: [
-      { name: 'KABELLISTRIK_LN_25K.geojson', desc: 'Jaringan kabel listrik', path: '/data/geojson_kota_bekasi/KABELLISTRIK_LN_25K.geojson' },
-      { name: 'GENLISTRIK_PT_25K.geojson',   desc: 'Generator listrik',      path: '/data/geojson_kota_bekasi/GENLISTRIK_PT_25K.geojson' },
-      { name: 'DEPOMINYAK_PT_25K.geojson',   desc: 'Depo minyak',            path: '/data/geojson_kota_bekasi/DEPOMINYAK_PT_25K.geojson' },
+      { name: 'KABELLISTRIK_LN_25K.geojson', desc: 'Jaringan kabel listrik', path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KABELLISTRIK_LN_25K.geojson' },
+      { name: 'GENLISTRIK_PT_25K.geojson',   desc: 'Generator listrik',      path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/GENLISTRIK_PT_25K.geojson' },
+      { name: 'DEPOMINYAK_PT_25K.geojson',   desc: 'Depo minyak',            path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/DEPOMINYAK_PT_25K.geojson' },
     ]},
   ];
 

@@ -1,0 +1,42 @@
+{
+  "model_name": "Random Forest",
+  "cv_accuracy": 0.7566176470588235,
+  "cv_macro_f1": 0.7521194010667694,
+  "feature_columns": [
+    "shape_area",
+    "shape_leng",
+    "compactness",
+    "elev_mean",
+    "elev_min",
+    "sungai_density",
+    "dist_to_river",
+    "pct_pemukiman",
+    "pct_sawah"
+  ],
+  "label_classes": [
+    "sedang",
+    "tinggi"
+  ],
+  "label_mapping": {
+    "sedang": 0,
+    "tinggi": 1
+  },
+  "training_samples": 82,
+  "class_distribution": {
+    "sedang": 48,
+    "tinggi": 34
+  },
+  "all_models_cv": {
+    "Random Forest": {
+      "accuracy": 0.7566176470588235,
+      "macro_f1": 0.7521194010667694
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.7551470588235294,
+      "macro_f1": 0.7499867315347192
+    }
+  },
+  "status_validasi": "Prototipe — Belum Tervalidasi",
+  "catatan_validasi": "Hasil klasifikasi belum tervalidasi dan tidak boleh digunakan sebagai prediksi final. Label berasal dari severity titik banjir per kelurahan; asal atribut severity belum terdokumentasi.",
+  "catatan_metrik": "cv_accuracy dan cv_macro_f1 berasal dari validasi silang acak (StratifiedKFold 5-fold) pada eksperimen notebook baseline. Angka ini tidak mengukur kemampuan generalisasi ke kecamatan yang belum dipelajari."
+}
