@@ -5,6 +5,17 @@
   box-sizing: border-box;
 }
 
+/* Pengaturan smooth scrolling global dan offset navigasi anchor */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 /* Variabel tipografi dasar (font, line-height, bobot) dan pengaturan render teks untuk seluruh halaman. */
 :root {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;

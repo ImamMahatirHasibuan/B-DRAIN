@@ -1,31 +1,40 @@
 /**
  * App.jsx: komponen landing page Geodashboard Bekasi (B-DRAIN).
  *
- * Landing page ini menampilkan hero, bagian Tentang Project, Fitur Unggulan,
- * bagian Dataset & Teknologi, footer, dan modal unduh dataset.
- * Perpindahan tampilan dilakukan lewat state showMap (tanpa React Router):
- * jika showMap bernilai true, komponen MapDashboard dirender menggantikan landing page.
+ * Landing page ini menampilkan hero dengan animasi, galeri foto interaktif + lightbox,
+ * bagian Tentang Project, Fitur Unggulan dengan animasi bar chart, bagian Dataset & Teknologi,
+ * footer lengkap dengan integrasi GitHub, Email, dan LinkedIn, serta modal unduh dataset.
+ * Perpindahan tampilan dilakukan lewat state showMap: jika true, MapDashboard dirender.
  */
 
-// React dan hook useState untuk state lokal (showMap, showDatasetModal, currentPhotoIndex).
-// Catatan: default import React tidak dipakai secara eksplisit di kode ini (tidak dihapus).
-import React, { useState, useEffect } from 'react';
-// Ikon dari lucide-react. Activity, TrendingUp, dan Droplet tidak dipakai di JSX (tidak dihapus).
-import { Activity, Database, TrendingUp, ArrowRight, Github, Mail, Droplet, Check } from 'lucide-react';
-// Komponen dashboard peta; ditampilkan menggantikan landing page saat showMap bernilai true.
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Database,
+  ArrowRight,
+  Github,
+  Mail,
+  Linkedin,
+  Check,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  ExternalLink,
+} from 'lucide-react';
 import MapDashboard from './MapDashboard';
-// Stylesheet khusus landing page.
 import './App.css';
-// Ikon dan gambar dari src/assets. Seluruh ikon di blok ini dipakai pada JSX, kecuali shoppingIcon.
+
+// Ikon dan gambar dari src/assets
 import mapIcon from './assets/map.png';
 import analysisIcon from './assets/analysis.png';
 import emergencyIcon from './assets/emergency.png';
 import barChartIcon from './assets/bar-chart.png';
 import databaseIcon from './assets/database.png';
 import clipboardIcon from './assets/clipboard.png';
-// Tidak dipakai di JSX (tidak dihapus).
-import shoppingIcon from './assets/shopping.png';
-// Foto dokumentasi untuk grid pada kartu Dokumentasi di hero (foto1 sampai foto7).
+import photoPng from './assets/photo.png';
+
+// Foto dokumentasi lapangan (foto1 sampai foto7)
 import foto1 from './assets/foto1.jpg';
 import foto2 from './assets/foto2.jpg';
 import foto3 from './assets/foto3.jpg';
@@ -33,24 +42,36 @@ import foto4 from './assets/foto4.jpg';
 import foto5 from './assets/foto5.jpg';
 import foto6 from './assets/foto6.jpg';
 import foto7 from './assets/foto7.jpg';
-// Ikon kecil untuk judul kartu Dokumentasi.
-import photoPng from './assets/photo.png';
+
+// Metadata 7 foto dokumentasi lapangan
+const PHOTOS_DATA = [
+  { src: foto1, title: 'Saluran Drainase Primer & Sekunder', desc: 'Pemantauan saluran drainase terbuka perkotaan Bekasi' },
+  { src: foto2, title: 'Tanggul & Sempadan Sungai', desc: 'Evaluasi elevasi tanggul penahan luapan air sungai utama' },
+  { src: foto3, title: 'Pintu Air & Pompa Pengendali', desc: 'Infrastruktur pengendali debit air dan pintu pengatur aliran' },
+  { src: foto4, title: 'Sedimentasi Saluran Air', desc: 'Identifikasi endapan lumpur yang menurunkan kapasitas tampung' },
+  { src: foto5, title: 'Wilayah Rawan Genangan Permukiman', desc: 'Zona permukiman padat penduduk yang rentan genangan' },
+  { src: foto6, title: 'Pertemuan Aliran & Muara Saluran', desc: 'Titik konfluensi anak sungai dan saluran primer' },
+  { src: foto7, title: 'Survei Titik Genangan Lapangan', desc: 'Verifikasi koordinat lapangan untuk validasi spasial model' },
+];
 
 /**
- * Komponen utama landing page.
- * Mengelola state tampilan, daftar dataset untuk modal unduh, dan aksi unduh file.
+ * Komponen utama landing page B-DRAIN.
  */
 function App() {
-  // showMap: menampilkan MapDashboard saat true.
-  // showDatasetModal: membuka modal Download Dataset saat true.
-  // currentPhotoIndex: tidak dibaca di JSX dan setter-nya tidak pernah dipanggil di kode ini (tidak dihapus).
   const [showMap, setShowMap] = useState(false);
   const [showDatasetModal, setShowDatasetModal] = useState(false);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  // Pratinjau data nyata dari public/data/data_banjir.geojson untuk bagian Data. Status: loading, ready, atau error.
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('hero');
   const [dataPreview, setDataPreview] = useState({ status: 'loading', features: [], kecamatan: 0, totalTitik: 0 });
+  const [lightbox, setLightbox] = useState({ isOpen: false, index: 0 });
+  const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
+  const [chartInView, setChartInView] = useState(() => (
+    typeof window !== 'undefined' ? !('IntersectionObserver' in window) : false
+  ));
 
-  // Mengambil data_banjir.geojson sekali saat landing dimuat. Ringkasan dihitung dari fitur asli, bukan angka statis.
+  const carouselRef = useRef(null);
+
+  // Mengambil data_banjir.geojson saat landing dimuat
   useEffect(() => {
     let aktif = true;
     fetch('/data/data_banjir.geojson')
@@ -71,20 +92,146 @@ function App() {
     return () => { aktif = false; };
   }, []);
 
-  // Menutup modal dengan tombol Escape selama modal terbuka.
+  // Keyboard navigation untuk Lightbox, Modal, dan Mobile Menu
   useEffect(() => {
-    if (!showDatasetModal) return undefined;
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setShowDatasetModal(false);
+      if (e.key === 'Escape') {
+        if (lightbox.isOpen) {
+          setLightbox((prev) => ({ ...prev, isOpen: false }));
+        } else if (showDatasetModal) {
+          setShowDatasetModal(false);
+        } else if (mobileMenuOpen) {
+          setMobileMenuOpen(false);
+        }
+      } else if (lightbox.isOpen) {
+        if (e.key === 'ArrowLeft') {
+          setLightbox((prev) => ({
+            ...prev,
+            index: (prev.index - 1 + PHOTOS_DATA.length) % PHOTOS_DATA.length,
+          }));
+        } else if (e.key === 'ArrowRight') {
+          setLightbox((prev) => ({
+            ...prev,
+            index: (prev.index + 1) % PHOTOS_DATA.length,
+          }));
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showDatasetModal]);
-  
-  // Sumber foto untuk grid dokumentasi; jumlahnya ditampilkan sebagai Total Foto.
-  const photos = [foto1, foto2, foto3, foto4, foto5, foto6, foto7];
-  
-  // Dataset utama yang dapat diunduh dari modal. Path mengacu ke folder public/data.
+  }, [lightbox.isOpen, showDatasetModal, mobileMenuOpen]);
+
+  // Lock body scroll saat Lightbox, Modal, atau Mobile Menu terbuka
+  useEffect(() => {
+    if (lightbox.isOpen || showDatasetModal || mobileMenuOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [lightbox.isOpen, showDatasetModal, mobileMenuOpen]);
+
+  // Scroll animations via Native IntersectionObserver
+  useEffect(() => {
+    if (showMap) return;
+
+    const revealElements = document.querySelectorAll('.reveal-on-scroll');
+    if (!('IntersectionObserver' in window)) {
+      revealElements.forEach((el) => el.classList.add('is-revealed'));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed');
+            if (entry.target.id === 'features' || entry.target.querySelector('.chart-mockup')) {
+              setChartInView(true);
+            }
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    revealElements.forEach((el) => observer.observe(el));
+
+    // Observer untuk mendeteksi seksi aktif pada navbar
+    const sectionElements = document.querySelectorAll('section[id], header[id]');
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    sectionElements.forEach((sec) => sectionObserver.observe(sec));
+
+    return () => {
+      observer.disconnect();
+      sectionObserver.disconnect();
+    };
+  }, [showMap]);
+
+  // Deteksi scroll pada horizontal carousel mobile
+  const handleCarouselScroll = useCallback(() => {
+    if (!carouselRef.current) return;
+    const { scrollLeft, clientWidth } = carouselRef.current;
+    if (clientWidth > 0) {
+      const idx = Math.round(scrollLeft / clientWidth);
+      if (idx >= 0 && idx < PHOTOS_DATA.length && idx !== activeCarouselIndex) {
+        setActiveCarouselIndex(idx);
+      }
+    }
+  }, [activeCarouselIndex]);
+
+  // Navigasi ke slide carousel mobile lewat dot
+  const scrollToCarouselSlide = (idx) => {
+    if (!carouselRef.current) return;
+    const slideWidth = carouselRef.current.clientWidth;
+    carouselRef.current.scrollTo({
+      left: idx * slideWidth,
+      behavior: 'smooth',
+    });
+    setActiveCarouselIndex(idx);
+  };
+
+  // Navigasi foto di Lightbox
+  const handleNextPhoto = (e) => {
+    e.stopPropagation();
+    setLightbox((prev) => ({
+      ...prev,
+      index: (prev.index + 1) % PHOTOS_DATA.length,
+    }));
+  };
+
+  const handlePrevPhoto = (e) => {
+    e.stopPropagation();
+    setLightbox((prev) => ({
+      ...prev,
+      index: (prev.index - 1 + PHOTOS_DATA.length) % PHOTOS_DATA.length,
+    }));
+  };
+
+  // Buka Lightbox pada foto tertentu
+  const openLightbox = (index) => {
+    setLightbox({ isOpen: true, index });
+  };
+
+  // Tutup Lightbox
+  const closeLightbox = () => {
+    setLightbox((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  // Dataset utama yang dapat diunduh dari modal
   const datasets = [
     { name: 'data_banjir.geojson',                                type: 'GeoJSON', desc: '70 titik rawan banjir di 12 kecamatan Kota Bekasi', path: '/data/data_banjir.geojson' },
     { name: 'kelurahan_kota_bekasi_48.geojson',                   type: 'GeoJSON', desc: '48 kelurahan wilayah administratif Kota Bekasi beserta 9 fitur spasial', path: '/data/kelurahan_kota_bekasi_48.geojson' },
@@ -92,8 +239,7 @@ function App() {
     { name: 'sebaran-rumah-sakit-jawa-barat.geojson',             type: 'GeoJSON', desc: 'Sebaran fasilitas kesehatan Jawa Barat',            path: '/data/sebaran-rumah-sakit-jawa-barat.geojson' },
   ];
 
-  // Layer Topografi BIG 1:25.000 dikelompokkan per group (warna dipakai sebagai aksen judul grup).
-  // Path mengacu ke public/data/geojson_kota_bekasi/geojson_kota_bekasi.
+  // Layer Topografi BIG 1:25.000 (8 kategori, 24 file)
   const topoDatasets = [
     { group: 'Topografi', color: '#b45309', items: [
       { name: 'KONTUR_LN_25K.geojson',     desc: 'Garis kontur elevasi',        path: '/data/geojson_kota_bekasi/geojson_kota_bekasi/KONTUR_LN_25K.geojson' },
@@ -143,7 +289,7 @@ function App() {
     ]},
   ];
 
-  // Memicu unduhan file: membuat elemen <a> sementara dengan atribut download, lalu meng-klik dan melepasnya dari DOM.
+  // Memicu unduhan file
   const handleDownload = (filePath, fileName) => {
     const link = document.createElement('a');
     link.href = filePath;
@@ -153,99 +299,320 @@ function App() {
     document.body.removeChild(link);
   };
 
-  // Jika showMap aktif, tampilkan dashboard peta; onBack mengembalikan tampilan ke landing page.
+  // Jika showMap bernilai true, buka tampilan MapDashboard
   if (showMap) {
     return <MapDashboard onBack={() => setShowMap(false)} />;
   }
 
   return (
     <div className="landing-page">
-      {/* Hero Section: bagian pembuka berisi judul, deskripsi, tombol aksi, statistik, dan kartu dokumentasi. */}
-      <section className="hero-section">
-        {/* Navbar tetap di bagian atas (fixed). Tautan #about, #features, dan #data menuju section di bawah. */}
-        <nav className="navbar">
-          <div className="nav-brand">
-            <img src="/logo.png" alt="Geodashboard Bekasi" className="brand-logo" style={{width: '100px', height: '100px', objectFit: 'contain'}} />
-          </div>
-          <div className="nav-links">
-            <a href="#about">About</a>
-            <a href="#features">Features</a>
-            <a href="#data">Data</a>
-            <button className="btn-map" onClick={() => setShowMap(true)}>
-              Visit Dashboard <ArrowRight size={18} />
-            </button>
-          </div>
-        </nav>
+      {/* ===================== NAVBAR ===================== */}
+      <nav className="navbar" role="navigation" aria-label="Navigasi Utama">
+        <div className="nav-container">
+          <a href="#hero" className="nav-brand" aria-label="B-DRAIN Beranda">
+            <img src="/logo.png" alt="Logo B-DRAIN" className="brand-logo" />
+            <div className="brand-text">
+              <span className="brand-title">B-DRAIN</span>
+              <span className="brand-sub">Kota Bekasi</span>
+            </div>
+          </a>
 
+          {/* Navigasi Desktop */}
+          <div className="nav-desktop">
+            <div className="nav-links">
+              <a
+                href="#about"
+                className={`nav-link ${activeSection === 'about' ? 'active' : ''}`}
+              >
+                About
+              </a>
+              <a
+                href="#features"
+                className={`nav-link ${activeSection === 'features' ? 'active' : ''}`}
+              >
+                Features
+              </a>
+              <a
+                href="#data"
+                className={`nav-link ${activeSection === 'data' ? 'active' : ''}`}
+              >
+                Data
+              </a>
+            </div>
+
+            <div className="nav-actions">
+              <a
+                href="https://github.com/ImamMahatirHasibuan/B-DRAIN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nav-btn-github"
+                aria-label="Repository GitHub B-DRAIN"
+                title="Buka Repository GitHub B-DRAIN"
+              >
+                <Github size={18} />
+              </a>
+
+              <button
+                className="btn-map"
+                onClick={() => setShowMap(true)}
+                aria-label="Visit Dashboard"
+              >
+                Visit Dashboard <ArrowRight size={17} />
+              </button>
+            </div>
+          </div>
+
+          {/* Toggle Menu Mobile */}
+          <button
+            className="mobile-toggle-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Navigation Drawer / Dropdown */}
+      {mobileMenuOpen && (
+        <div className="mobile-nav-overlay" onClick={() => setMobileMenuOpen(false)}>
+          <div className="mobile-nav-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-nav-header">
+              <div className="mobile-nav-brand">
+                <img src="/logo.png" alt="B-DRAIN" className="brand-logo-small" />
+                <span className="brand-title">B-DRAIN</span>
+              </div>
+              <button
+                className="mobile-nav-close"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Tutup navigasi mobile"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mobile-nav-links">
+              <a
+                href="#about"
+                className={`mobile-nav-link ${activeSection === 'about' ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
+              </a>
+              <a
+                href="#features"
+                className={`mobile-nav-link ${activeSection === 'features' ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Features
+              </a>
+              <a
+                href="#data"
+                className={`mobile-nav-link ${activeSection === 'data' ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Data
+              </a>
+              <a
+                href="https://github.com/ImamMahatirHasibuan/B-DRAIN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mobile-nav-link github-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Github size={18} /> GitHub Repository
+              </a>
+            </div>
+
+            <div className="mobile-nav-cta">
+              <button
+                className="btn-map-full"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowMap(true);
+                }}
+              >
+                Visit Dashboard <ArrowRight size={17} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== HERO SECTION ===================== */}
+      <section id="hero" className="hero-section">
         <div className="hero-content">
-          <div className="hero-text">
+          <div className="hero-text reveal-on-scroll hero-reveal">
             <div className="badge">Geodashboard Berbasis Web GIS</div>
             <h1>
               Visualisasi & Analisis<br />
               <span className="gradient-text">Titik Rawan Banjir</span><br />
               Kota Bekasi
             </h1>
-            <p>
+            <p className="hero-description">
               Platform Geodashboard interaktif untuk visualisasi data spasial titik rawan banjir 
               dan Sungai Utama Kota Bekasi. Dilengkapi fitur analisis spasial untuk 
               identifikasi area prioritas perbaikan infrastruktur.
             </p>
+
             <div className="hero-actions">
-              <button className="btn-primary" onClick={() => setShowMap(true)}>
-                <img src={analysisIcon} alt="Explore" style={{width:'20px',height:'20px',objectFit:'contain'}} />
+              <button
+                className="btn-primary"
+                onClick={() => setShowMap(true)}
+                aria-label="Explore Geodashboard"
+              >
+                <img src={analysisIcon} alt="Explore" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                 Explore Geodashboard
               </button>
-              <button className="btn-secondary" onClick={() => setShowDatasetModal(true)}>
-                <Database size={20} />
+              <button
+                className="btn-secondary"
+                onClick={() => setShowDatasetModal(true)}
+                aria-label="View Dataset"
+              >
+                <Database size={19} />
                 View Dataset
               </button>
             </div>
-            {/* Statistik ringkas hero. Angka dihitung dari data_banjir.geojson; tampil "-" selama data belum dimuat. */}
+
+            {/* Statistik Cepat */}
             <div className="hero-stats">
               <div className="stat-item">
-                <div className="stat-number">{dataPreview.kecamatan || '-'}</div>
+                <div className="stat-number">
+                  {dataPreview.status === 'ready' ? dataPreview.kecamatan : (
+                    <span className="stat-loading-dash">-</span>
+                  )}
+                </div>
                 <div className="stat-label">Kecamatan</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">{dataPreview.features.length || '-'}</div>
+                <div className="stat-number">
+                  {dataPreview.status === 'ready' ? dataPreview.features.length : (
+                    <span className="stat-loading-dash">-</span>
+                  )}
+                </div>
                 <div className="stat-label">Titik Data</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">{dataPreview.totalTitik || '-'}</div>
+                <div className="stat-number">
+                  {dataPreview.status === 'ready' ? dataPreview.totalTitik : (
+                    <span className="stat-loading-dash">-</span>
+                  )}
+                </div>
                 <div className="stat-label">Total Titik Banjir</div>
               </div>
             </div>
           </div>
-          {/* Kartu visual kanan: grid foto dokumentasi dari array photos dan jumlah total foto. */}
-          <div className="hero-visual">
+
+          {/* Card Dokumentasi Galeri Foto (Desktop Asimetris + Mobile Carousel) */}
+          <div className="hero-visual reveal-on-scroll hero-card-reveal">
             <div className="visual-card">
               <div className="card-header">
-                <img src={photoPng} alt="Dokumentasi" style={{width:'24px',height:'24px',objectFit:'contain',borderRadius:'4px'}} />
-                <span>Dokumentasi</span>
+                <div className="card-header-left">
+                  <img src={photoPng} alt="Dokumentasi" className="header-icon" />
+                  <span>Dokumentasi Lapangan</span>
+                </div>
+                <span className="photo-count-badge">{PHOTOS_DATA.length} Foto</span>
               </div>
-              <div className="visual-content">
-                <div className="photos-grid">
-                  {photos.map((photo, idx) => (
-                    <div key={idx} className="photo-item">
-                      <img src={photo} alt={`Foto ${idx + 1}`} className="grid-photo" />
+
+              {/* TAMPILAN DESKTOP & TABLET: Layout Asimetris (1 Utama + 6 Thumbnail) */}
+              <div className="desktop-gallery">
+                <div
+                  className="photo-featured"
+                  onClick={() => openLightbox(0)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Buka foto utama di lightbox"
+                  onKeyDown={(e) => { if (e.key === 'Enter') openLightbox(0); }}
+                >
+                  <img src={PHOTOS_DATA[0].src} alt={PHOTOS_DATA[0].title} className="gallery-img" />
+                  <div className="photo-overlay">
+                    <span className="photo-overlay-tag">Foto Utama</span>
+                    <p className="photo-overlay-title">{PHOTOS_DATA[0].title}</p>
+                    <span className="photo-zoom-hint"><Maximize2 size={14} /> Perbesar</span>
+                  </div>
+                </div>
+
+                <div className="photo-thumbs-grid">
+                  {PHOTOS_DATA.slice(1).map((photo, idx) => {
+                    const actualIdx = idx + 1;
+                    return (
+                      <div
+                        key={actualIdx}
+                        className="photo-thumb-item"
+                        onClick={() => openLightbox(actualIdx)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Buka foto ${actualIdx + 1} di lightbox`}
+                        onKeyDown={(e) => { if (e.key === 'Enter') openLightbox(actualIdx); }}
+                      >
+                        <img src={photo.src} alt={photo.title} className="gallery-thumb-img" />
+                        <div className="thumb-hover-overlay">
+                          <Maximize2 size={14} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* TAMPILAN MOBILE: Horizontal Swipe Carousel */}
+              <div className="mobile-carousel-wrap">
+                <div
+                  className="mobile-carousel"
+                  ref={carouselRef}
+                  onScroll={handleCarouselScroll}
+                >
+                  {PHOTOS_DATA.map((photo, idx) => (
+                    <div
+                      key={idx}
+                      className="carousel-slide"
+                      onClick={() => openLightbox(idx)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Buka foto ${idx + 1}: ${photo.title}`}
+                      onKeyDown={(e) => { if (e.key === 'Enter') openLightbox(idx); }}
+                    >
+                      <div className="carousel-img-container">
+                        <img src={photo.src} alt={photo.title} className="carousel-img" />
+                        <div className="carousel-caption">
+                          <span className="carousel-index">Foto {idx + 1} dari {PHOTOS_DATA.length}</span>
+                          <span className="carousel-title">{photo.title}</span>
+                        </div>
+                        <span className="carousel-zoom-pill">
+                          <Maximize2 size={13} /> Ketuk untuk Perbesar
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className="preview-stats">
-                  <div className="preview-item high">
-                    <div className="dot"></div>
-                    <span>Total Foto</span>
-                    <strong>{photos.length}</strong>
-                  </div>
+
+                {/* Dot Indicators untuk Mobile Carousel */}
+                <div className="carousel-dots" aria-label="Indikator slide foto">
+                  {PHOTOS_DATA.map((_, dotIdx) => (
+                    <button
+                      key={dotIdx}
+                      className={`carousel-dot ${activeCarouselIndex === dotIdx ? 'active' : ''}`}
+                      onClick={() => scrollToCarouselSlide(dotIdx)}
+                      aria-label={`Menuju foto ${dotIdx + 1}`}
+                    />
+                  ))}
                 </div>
+              </div>
+
+              {/* Footer Ringkas Card Dokumentasi */}
+              <div className="visual-card-footer">
+                <span className="visual-footer-note">
+                  Dokumentasi survei kondisi drainase & titik banjir Kota Bekasi
+                </span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* About Section: penjelasan singkat project dan empat kartu ringkasan (visualisasi, analisis, prioritas, analitik). */}
-      <section id="about" className="about-section">
+      {/* ===================== ABOUT SECTION ===================== */}
+      <section id="about" className="about-section reveal-on-scroll">
         <div className="section-container">
           <div className="section-header">
             <span className="section-tag">Tentang Project</span>
@@ -253,23 +620,31 @@ function App() {
             <p>Platform SIG (Sistem Informasi Geografis) untuk visualisasi dan analisis titik rawan banjir serta Sungai Utama</p>
           </div>
           <div className="about-grid">
-            <div className="about-card">
-              <div className="about-icon"><img src={mapIcon} alt="Map" style={{width: '48px', height: '48px'}} /></div>
+            <div className="about-card stagger-item">
+              <div className="about-icon">
+                <img src={mapIcon} alt="Map" style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+              </div>
               <h3>Visualisasi Spasial Interaktif</h3>
               <p>Peta interaktif dengan Leaflet.js menampilkan data Shapefile (.shp) dan GeoJSON untuk visualisasi area Sungai Utama dan titik banjir di 12 kecamatan Bekasi.</p>
             </div>
-            <div className="about-card">
-              <div className="about-icon"><img src={analysisIcon} alt="Analysis" style={{width: '48px', height: '48px'}} /></div>
+            <div className="about-card stagger-item">
+              <div className="about-icon">
+                <img src={analysisIcon} alt="Analysis" style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+              </div>
               <h3>Analisis Spasial</h3>
               <p>Fitur Buffer Analysis dan Proximity Analysis untuk mengidentifikasi korelasi antara titik genangan dengan Sungai Utama terdekat.</p>
             </div>
-            <div className="about-card">
-              <div className="about-icon"><img src={emergencyIcon} alt="Priority" style={{width: '48px', height: '48px'}} /></div>
+            <div className="about-card stagger-item">
+              <div className="about-icon">
+                <img src={emergencyIcon} alt="Priority" style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+              </div>
               <h3>Identifikasi Area Prioritas</h3>
               <p>Sistem scoring otomatis untuk menentukan area yang memerlukan perbaikan infrastruktur sungai secara mendesak.</p>
             </div>
-            <div className="about-card">
-              <div className="about-icon"><img src={barChartIcon} alt="Analytics" style={{width: '48px', height: '48px'}} /></div>
+            <div className="about-card stagger-item">
+              <div className="about-icon">
+                <img src={barChartIcon} alt="Analytics" style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+              </div>
               <h3>Dashboard Analitik</h3>
               <p>Visualisasi data dengan berbagai chart dan grafik untuk mendukung pengambilan keputusan berbasis data spasial.</p>
             </div>
@@ -277,8 +652,8 @@ function App() {
         </div>
       </section>
 
-      {/* Features Section: kartu fitur unggulan. Diagram batang pada kartu besar (chart-mockup) adalah ilustrasi statis, bukan grafik data. */}
-      <section id="features" className="features-section">
+      {/* ===================== FEATURES SECTION ===================== */}
+      <section id="features" className="features-section reveal-on-scroll">
         <div className="section-container">
           <div className="section-header">
             <span className="section-tag">Key Features</span>
@@ -287,37 +662,37 @@ function App() {
           <div className="features-grid">
             <div className="feature-large">
               <div className="feature-visual">
-                <div className="chart-mockup">
-                  <div className="bar" style={{height: '70%'}}></div>
-                  <div className="bar" style={{height: '45%'}}></div>
-                  <div className="bar" style={{height: '85%'}}></div>
-                  <div className="bar" style={{height: '60%'}}></div>
-                  <div className="bar" style={{height: '90%'}}></div>
+                <div className={`chart-mockup ${chartInView ? 'animate-bars' : ''}`} aria-hidden="true">
+                  <div className="bar bar-1" style={{ '--target-height': '70%' }}></div>
+                  <div className="bar bar-2" style={{ '--target-height': '45%' }}></div>
+                  <div className="bar bar-3" style={{ '--target-height': '85%' }}></div>
+                  <div className="bar bar-4" style={{ '--target-height': '60%' }}></div>
+                  <div className="bar bar-5" style={{ '--target-height': '90%' }}></div>
                 </div>
               </div>
               <div className="feature-content">
-                <img src={analysisIcon} alt="Spatial Analysis" className="feature-icon" style={{width: '32px', height: '32px'}} />
+                <img src={analysisIcon} alt="Spatial Analysis" className="feature-icon" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
                 <h3>Spatial Analysis Tools</h3>
                 <p>Fitur analisis spasial untuk identifikasi korelasi titik banjir dengan Sungai Utama</p>
-                <ul>
-                  <li style={{display:'flex',alignItems:'center',gap:'.4rem'}}><Check size={15} /> Buffer Analysis</li>
-                  <li style={{display:'flex',alignItems:'center',gap:'.4rem'}}><Check size={15} /> Proximity Analysis</li>
-                  <li style={{display:'flex',alignItems:'center',gap:'.4rem'}}><Check size={15} /> Priority Area Identification</li>
+                <ul className="feature-checklist">
+                  <li><Check size={16} className="check-icon" /> Buffer Analysis</li>
+                  <li><Check size={16} className="check-icon" /> Proximity Analysis</li>
+                  <li><Check size={16} className="check-icon" /> Priority Area Identification</li>
                 </ul>
               </div>
             </div>
-            <div className="feature-card">
-              <img src={mapIcon} alt="Interactive GIS" className="card-icon" style={{width: '28px', height: '28px'}} />
+            <div className="feature-card stagger-item">
+              <img src={mapIcon} alt="Interactive GIS" className="card-icon" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
               <h3>Interactive GIS Layers</h3>
               <p>Multiple layers: Sungai Utama, Flood points, dan Buffer zones visualization</p>
             </div>
-            <div className="feature-card">
-              <img src={databaseIcon} alt="Shapefile Support" className="card-icon" style={{width: '28px', height: '28px'}} />
+            <div className="feature-card stagger-item">
+              <img src={databaseIcon} alt="Shapefile Support" className="card-icon" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
               <h3>Shapefile Support</h3>
               <p>Import data spasial format .shp dan GeoJSON untuk visualisasi infrastruktur</p>
             </div>
-            <div className="feature-card">
-              <img src={clipboardIcon} alt="Dynamic Filtering" className="card-icon" style={{width: '28px', height: '28px'}} />
+            <div className="feature-card stagger-item">
+              <img src={clipboardIcon} alt="Dynamic Filtering" className="card-icon" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
               <h3>Dynamic Filtering</h3>
               <p>Filter real-time berdasarkan kecamatan, severity, dan hasil analisis spasial</p>
             </div>
@@ -325,8 +700,8 @@ function App() {
         </div>
       </section>
 
-      {/* Data Section: deskripsi dataset, daftar teknologi, dan tombol menuju dashboard. Kotak di sisi kanan menampilkan pratinjau data_banjir.geojson yang dimuat dari public/data. */}
-      <section id="data" className="data-section">
+      {/* ===================== DATA SECTION ===================== */}
+      <section id="data" className="data-section reveal-on-scroll">
         <div className="section-container">
           <div className="data-content">
             <div className="data-text">
@@ -339,25 +714,42 @@ function App() {
                 <span className="tech-badge">Recharts</span>
                 <span className="tech-badge">GeoJSON</span>
               </div>
-              <button className="btn-data" onClick={() => setShowMap(true)}>
+              <button
+                className="btn-data"
+                onClick={() => setShowMap(true)}
+                aria-label="Start Exploring Geodashboard"
+              >
                 Start Exploring →
               </button>
             </div>
+
             <div className="data-visual">
               <div className="data-box">
                 <div className="data-header">
-                  <span><img src={databaseIcon} alt="" style={{width: '20px', height: '20px', marginRight: '0.5rem', verticalAlign: 'middle'}} /> data_banjir.geojson</span>
+                  <span>
+                    <img src={databaseIcon} alt="" style={{ width: '18px', height: '18px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                    data_banjir.geojson
+                  </span>
                 </div>
                 <div className="data-rows">
                   {dataPreview.status === 'loading' && <p className="data-note">Memuat data...</p>}
-                  {dataPreview.status === 'error' && <p className="data-note">Data tidak dapat dimuat. Pastikan file public/data/data_banjir.geojson tersedia.</p>}
+                  {dataPreview.status === 'error' && (
+                    <p className="data-note">Data tidak dapat dimuat. Pastikan file public/data/data_banjir.geojson tersedia.</p>
+                  )}
                   {dataPreview.status === 'ready' && (
                     <>
-                      <p className="data-note">{dataPreview.features.length} fitur, {dataPreview.kecamatan} kecamatan. Menampilkan 6 baris pertama.</p>
+                      <p className="data-note">
+                        {dataPreview.features.length} fitur, {dataPreview.kecamatan} kecamatan. Menampilkan 6 baris pertama.
+                      </p>
                       <div className="data-table-wrap">
                         <table className="data-table">
                           <thead>
-                            <tr><th>Kecamatan</th><th>Titik</th><th>Severity</th><th>Tahun</th></tr>
+                            <tr>
+                              <th>Kecamatan</th>
+                              <th>Titik</th>
+                              <th>Severity</th>
+                              <th>Tahun</th>
+                            </tr>
                           </thead>
                           <tbody>
                             {dataPreview.features.slice(0, 6).map((f, idx) => (
@@ -380,56 +772,168 @@ function App() {
         </div>
       </section>
 
-      {/* Footer: identitas project, informasi mahasiswa, ikon tautan, dan keterangan hak cipta. */}
-      <footer className="footer">
+      {/* ===================== FOOTER ===================== */}
+      <footer className="footer reveal-on-scroll">
         <div className="footer-content">
+          {/* Kolom 1: Brand & Keterangan Proyek */}
           <div className="footer-brand">
-            <img src="/logo.png" alt="Geodashboard Bekasi" className="footer-logo" style={{width: '100px', height: '100px', objectFit: 'contain'}} />
-            <h4 style={{marginTop: '0.5rem', fontSize: '1.1rem'}}>Geodashboard Bekasi</h4>
-            <p style={{fontSize: '0.85rem', color: '#94a3b8'}}>
-              Visualisasi & Analisis Spasial Titik Rawan Banjir
+            <div className="footer-logo-wrap">
+              <img src="/logo.png" alt="Logo Geodashboard Bekasi" className="footer-logo" />
+              <div className="footer-brand-title">
+                <h4>Geodashboard Bekasi</h4>
+                <span className="footer-brand-badge">B-DRAIN</span>
+              </div>
+            </div>
+            <p className="footer-brand-desc">
+              Visualisasi & Analisis Spasial Titik Rawan Banjir Kota Bekasi berbasis Web GIS.
             </p>
           </div>
+
+          {/* Kolom 2: Informasi Akademik & Pengembang */}
           <div className="footer-info">
-            <h5 style={{marginBottom: '0.75rem', color: '#0c4a6e'}}>Informasi Project</h5>
-            <p style={{fontSize: '0.85rem', marginBottom: '0.25rem'}}>
+            <h5 className="footer-heading">Informasi Project</h5>
+            <p className="footer-text">
               <strong>Mahasiswa:</strong> Imam Mahatir Hasibuan
             </p>
-            <p style={{fontSize: '0.85rem', marginBottom: '0.25rem'}}>
+            <p className="footer-text">
               <strong>NIM:</strong> 2702278386
             </p>
-            <p style={{fontSize: '0.85rem', marginBottom: '0.25rem'}}>
+            <p className="footer-text">
               <strong>Program:</strong> Computer Science - Software Engineering
             </p>
-            <p style={{fontSize: '0.85rem'}}>
+            <p className="footer-text">
               <strong>Universitas:</strong> Bina Nusantara
             </p>
+            <p className="footer-text footer-email-row">
+              <strong>Email:</strong>{' '}
+              <a href="mailto:imamahatir@gmail.com" className="footer-email-link">
+                <Mail size={13} /> imamahatir@gmail.com
+              </a>
+            </p>
           </div>
-          <div className="footer-links">
-            <Github size={20} />
-            <Mail size={20} />
+
+          {/* Kolom 3: Tautan Sosial & Repositori Resmi */}
+          <div className="footer-social-column">
+            <h5 className="footer-heading">Tautan & Kontak</h5>
+            <div className="footer-social-links">
+              <a
+                href="https://github.com/ImamMahatirHasibuan/B-DRAIN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-pill-btn github-pill"
+                aria-label="GitHub Repository B-DRAIN"
+              >
+                <Github size={17} />
+                <span>GitHub</span>
+                <ExternalLink size={12} className="pill-ext-icon" />
+              </a>
+
+              <a
+                href="mailto:imamahatir@gmail.com"
+                className="social-pill-btn email-pill"
+                aria-label="Kirim Email ke Imam Mahatir Hasibuan"
+              >
+                <Mail size={17} />
+                <span>Email</span>
+              </a>
+
+              <a
+                href="https://www.linkedin.com/in/imam-mahatir-hasibuan-75169a2a8"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-pill-btn linkedin-pill"
+                aria-label="Profil LinkedIn Imam Mahatir Hasibuan"
+              >
+                <Linkedin size={17} />
+                <span>LinkedIn</span>
+                <ExternalLink size={12} className="pill-ext-icon" />
+              </a>
+            </div>
           </div>
         </div>
+
         <div className="footer-bottom">
           <p>© 2026 Geodashboard Bekasi - Pre-Thesis Project. Built with React, Leaflet.js & GeoJSON.</p>
         </div>
       </footer>
 
-      {/* Dataset Modal: tampil saat showDatasetModal bernilai true. Klik overlay atau tombol × untuk menutup. */}
+      {/* ===================== LIGHTBOX MODAL ===================== */}
+      {lightbox.isOpen && (
+        <div className="lightbox-overlay" onClick={closeLightbox} role="dialog" aria-modal="true" aria-label="Lightbox Foto Dokumentasi">
+          <div className="lightbox-container" onClick={(e) => e.stopPropagation()}>
+            <div className="lightbox-header">
+              <div className="lightbox-title-wrap">
+                <span className="lightbox-count">
+                  Foto {lightbox.index + 1} dari {PHOTOS_DATA.length}
+                </span>
+                <h3 className="lightbox-caption">{PHOTOS_DATA[lightbox.index].title}</h3>
+              </div>
+              <button
+                className="lightbox-close-btn"
+                onClick={closeLightbox}
+                aria-label="Tutup preview foto"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="lightbox-body">
+              <button
+                className="lightbox-nav-btn prev"
+                onClick={handlePrevPhoto}
+                aria-label="Foto sebelumnya"
+              >
+                <ChevronLeft size={28} />
+              </button>
+
+              <div className="lightbox-image-wrap">
+                <img
+                  src={PHOTOS_DATA[lightbox.index].src}
+                  alt={PHOTOS_DATA[lightbox.index].title}
+                  className="lightbox-img"
+                />
+                <p className="lightbox-desc">{PHOTOS_DATA[lightbox.index].desc}</p>
+              </div>
+
+              <button
+                className="lightbox-nav-btn next"
+                onClick={handleNextPhoto}
+                aria-label="Foto berikutnya"
+              >
+                <ChevronRight size={28} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== DATASET MODAL ===================== */}
       {showDatasetModal && (
         <div className="modal-overlay" onClick={() => setShowDatasetModal(false)}>
-          <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="dataset-modal-title" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dataset-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2 id="dataset-modal-title">Download Dataset</h2>
-              <button className="modal-close" onClick={() => setShowDatasetModal(false)}>&times;</button>
+              <button
+                className="modal-close"
+                onClick={() => setShowDatasetModal(false)}
+                title="Tutup dialog dataset"
+              >
+                &times;
+              </button>
             </div>
             <div className="modal-body">
-              <p style={{marginBottom: '1.5rem', color: '#64748b'}}>Pilih dataset yang ingin Anda download:</p>
+              <p className="modal-intro">Pilih dataset spasial yang ingin Anda unduh:</p>
 
-              {/* Dataset Utama: item dirender dari array datasets. */}
-              <div style={{marginBottom: '1.5rem'}}>
-                <h3 style={{fontSize: '0.85rem', fontWeight: '700', color: '#0c4a6e', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem'}}>
-                  <Database size={14}/> Dataset Utama
+              {/* Dataset Utama */}
+              <div className="modal-section-group">
+                <h3 className="modal-section-title">
+                  <Database size={15} /> Dataset Utama
                 </h3>
                 <div className="dataset-list">
                   {datasets.map((dataset, idx) => (
@@ -441,39 +945,50 @@ function App() {
                           <span className="dataset-size">{dataset.desc}</span>
                         </div>
                       </div>
-                      <button className="btn-download" onClick={() => handleDownload(dataset.path, dataset.name)}>
-                        <Database size={16}/> Download
+                      <button
+                        className="btn-download"
+                        onClick={() => handleDownload(dataset.path, dataset.name)}
+                        aria-label={`Download ${dataset.name}`}
+                      >
+                        <Database size={15} /> Download
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Topografi BIG 1:25.000: layer dirender dari array topoDatasets, dikelompokkan per group. */}
-              <div>
-                <h3 style={{fontSize: '0.85rem', fontWeight: '700', color: '#0c4a6e', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem'}}>
-                  <Database size={14}/> Topografi BIG 1:25.000
+              {/* Topografi BIG 1:25.000 */}
+              <div className="modal-section-group">
+                <h3 className="modal-section-title">
+                  <Database size={15} /> Topografi BIG 1:25.000
                 </h3>
-                <p style={{fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.75rem'}}>
-                  Sumber: Badan Informasi Geospasial — Peta Rupa Bumi Indonesia, wilayah Kota Bekasi ({topoDatasets.reduce((s, g) => s + g.items.length, 0)} layer)
+                <p className="modal-section-sub">
+                  Sumber: Badan Informasi Geospasial — Peta Rupa Bumi Indonesia wilayah Kota Bekasi ({topoDatasets.reduce((s, g) => s + g.items.length, 0)} layer)
                 </p>
                 {topoDatasets.map((group) => (
-                  <div key={group.group} style={{marginBottom: '1rem'}}>
-                    <div style={{fontSize: '0.78rem', fontWeight: '700', color: group.color, borderLeft: `3px solid ${group.color}`, paddingLeft: '0.5rem', marginBottom: '0.4rem'}}>
+                  <div key={group.group} className="topo-group-block">
+                    <div
+                      className="topo-group-title"
+                      style={{ color: group.color, borderLeftColor: group.color }}
+                    >
                       {group.group}
                     </div>
-                    <div className="dataset-list" style={{gap: '0.3rem'}}>
+                    <div className="dataset-list topo-list">
                       {group.items.map((item, idx) => (
-                        <div key={idx} className="dataset-item" style={{padding: '0.5rem 0.75rem'}}>
+                        <div key={idx} className="dataset-item topo-item">
                           <div className="dataset-info">
-                            <h4 style={{fontSize: '0.8rem'}}>{item.name}</h4>
+                            <h4 className="topo-item-name">{item.name}</h4>
                             <div className="dataset-meta">
                               <span className="dataset-type">GeoJSON</span>
                               <span className="dataset-size">{item.desc}</span>
                             </div>
                           </div>
-                          <button className="btn-download" style={{padding: '0.3rem 0.65rem', fontSize: '0.75rem'}} onClick={() => handleDownload(item.path, item.name)}>
-                            <Database size={13}/> Download
+                          <button
+                            className="btn-download topo-btn-download"
+                            onClick={() => handleDownload(item.path, item.name)}
+                            aria-label={`Download ${item.name}`}
+                          >
+                            <Database size={13} /> Download
                           </button>
                         </div>
                       ))}
