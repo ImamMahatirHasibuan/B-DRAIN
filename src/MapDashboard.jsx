@@ -1282,9 +1282,14 @@ const MapDashboard = ({ onBack }) => {
    * @param {string} tab Kunci tab: 'overview', 'layers', 'analytics', 'spatial', atau 'ai'.
    */
   const handleMobileTabSelect = (tab) => {
-    setActiveTab(tab);
-    if (isMobileViewport) {
-      setSidebarOpen(true);
+    if (isMobileViewport && activeTab === tab && sidebarOpen) {
+      // Mengetuk tab aktif kembali akan menutup panel ke tampilan peta
+      setSidebarOpen(false);
+    } else {
+      setActiveTab(tab);
+      if (isMobileViewport) {
+        setSidebarOpen(true);
+      }
     }
   };
 
@@ -1300,11 +1305,11 @@ const MapDashboard = ({ onBack }) => {
             </button>
             <div className="logo">
               <div className="logo-icon-wrapper">
-                <img src={logoBDrain} alt="Geodashboard Bekasi" className="logo-image" style={{width:'55px',height:'55px',objectFit:'contain'}} />
+                <img src={logoBDrain} alt="B-DRAIN Bekasi" className="logo-image" />
               </div>
               <div className="logo-text">
-                <h1 style={{fontSize:'1rem',fontWeight:'700',color:'#0c4a6e',marginBottom:'.15rem'}}>Geodashboard Bekasi</h1>
-                <p style={{fontSize:'.75rem',color:'#64748b'}}>Visualisasi & Analisis Spasial Titik Rawan Banjir</p>
+                <h1 className="logo-title">Geodashboard Bekasi</h1>
+                <p className="logo-subtitle">Visualisasi & Analisis Spasial Titik Rawan Banjir</p>
               </div>
             </div>
           </div>
@@ -1336,7 +1341,7 @@ const MapDashboard = ({ onBack }) => {
             <button type="button" className="icon-btn search-toggle-btn" onClick={toggleMobileSearch} title="Cari kecamatan" aria-label="Cari kecamatan" aria-expanded={isSearchVisible}><Search size={20} /></button>
             <button className="icon-btn" onClick={toggleDarkMode} title="Toggle Dark Mode">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
             <button className="icon-btn" onClick={toggleFullscreen} title="Fullscreen">{fullscreen ? <Minimize2 size={20}/> : <Maximize2 size={20}/>}</button>
-            <button className="menu-btn" onClick={handleMenuToggle}>{sidebarOpen ? <X size={24}/> : <Menu size={23}/>}</button>
+            <button className="menu-btn" onClick={handleMenuToggle} title={sidebarOpen ? "Tutup Sidebar" : "Buka Sidebar"} aria-label="Toggle Sidebar">{sidebarOpen ? <X size={24}/> : <Menu size={23}/>}</button>
           </div>
         </div>
       </header>
@@ -1352,7 +1357,7 @@ const MapDashboard = ({ onBack }) => {
           {/* Mobile-only drawer header with a reachable close button */}
           <div className="sidebar-mobile-header">
             <span className="sidebar-mobile-title">
-              {{overview:'Overview', layers:'Layers', analytics:'Analytics', spatial:'Spatial', ai:'Risiko'}[activeTab] || 'Menu'}
+              {{overview:'Overview', layers:'Layers', analytics:'Analytics', spatial:'Spatial', ai:'Risiko Banjir'}[activeTab] || 'Menu'}
             </span>
             <button
               className="sidebar-close-btn"
@@ -2162,17 +2167,7 @@ const MapDashboard = ({ onBack }) => {
 
             {/* Risk legend overlay */}
             {(activeLayers.floodRisk || activeLayers.flashFloodRisk || (showMlLayer && mlResult) || (activeLayers.mlBatchRisk && sortedBatchResults.length > 0)) && (
-              <div style={{
-                position:'fixed',bottom:'20px',right:'20px',
-                background:'rgba(255,255,255,0.93)',
-                backdropFilter:'blur(14px)',
-                border:'1px solid rgba(14,165,233,0.18)',
-                borderRadius:'14px',
-                padding:'1rem 1.2rem',
-                maxWidth:'275px',
-                zIndex:400,
-                boxShadow:'0 8px 32px rgba(14,165,233,0.14)',
-              }}>
+              <div className="risk-legend-overlay">
                 <div style={{fontWeight:'700',color:'#0c4a6e',fontSize:'.9rem',borderBottom:'1px solid rgba(14,165,233,0.15)',paddingBottom:'.5rem',marginBottom:'.8rem'}}>
                   📊 Legenda Risiko (Terpisah Sumber)
                 </div>

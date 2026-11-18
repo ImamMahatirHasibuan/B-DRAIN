@@ -268,20 +268,23 @@ export default function SpatialAnalysisPanel({
                       <option value="Tidak Terlayani">Tidak Terlayani ({analysisResults.filter((r) => r.coverage === 'Tidak Terlayani').length})</option>
                     </select>
                   </div>
+                  <div className="table-scroll-hint">
+                    <span>⇄ Geser tabel secara horizontal untuk melihat semua kolom</span>
+                  </div>
                   <div className="results-table">
                     <table>
                       <thead>
                         <tr>
-                          <th>Wilayah (Spasial)</th>
-                          <th>Sungai Utama</th>
-                          <th>Status</th>
-                          <th>Jarak Terdekat</th>
+                          <th className="col-wilayah">Wilayah (Spasial)</th>
+                          <th className="col-sungai">Sungai Utama</th>
+                          <th className="col-status">Status Buffer</th>
+                          <th className="col-jarak">Jarak Terdekat</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredAnalysisResults.map((r) => (
                           <tr key={r.id}>
-                            <td>
+                            <td className="col-wilayah">
                               <div>{r.kelurahan_spasial ? `${r.kelurahan_spasial} (${r.kecamatan_spasial})` : r.nama_kecamatan || r.kecamatan}</div>
                               {r.perlu_diperiksa && (
                                 <div style={{ fontSize: '.64rem', color: '#d97706', fontWeight: 600 }}>
@@ -289,11 +292,11 @@ export default function SpatialAnalysisPanel({
                                 </div>
                               )}
                             </td>
-                            <td><strong>{r.drainageInBuffer}</strong></td>
-                            <td>
+                            <td className="col-sungai"><strong>{r.drainageInBuffer}</strong></td>
+                            <td className="col-status">
                               <span className={`coverage-badge ${r.coverage === 'Terlayani' ? 'good' : 'poor'}`}>{r.coverage}</span>
                             </td>
-                            <td>
+                            <td className="col-jarak">
                               <div>{r.nearestDrainage ? `${r.nearestDrainage.distance}m` : 'N/A'}</div>
                               {r.nearestDrainage?.type && (
                                 <div style={{ fontSize: '.63rem', color: '#64748b' }}>{r.nearestDrainage.type}</div>
@@ -328,20 +331,23 @@ export default function SpatialAnalysisPanel({
                       <option value="Jauh">Jauh (&gt;= 1000m)</option>
                     </select>
                   </div>
+                  <div className="table-scroll-hint">
+                    <span>⇄ Geser tabel secara horizontal untuk melihat semua kolom</span>
+                  </div>
                   <div className="results-table">
                     <table>
                       <thead>
                         <tr>
-                          <th>Wilayah (Spasial)</th>
-                          <th>Jarak Segmen</th>
-                          <th>Aksesibilitas</th>
-                          <th>Skor</th>
+                          <th className="col-wilayah">Wilayah (Spasial)</th>
+                          <th className="col-jarak">Jarak Segmen</th>
+                          <th className="col-akses">Aksesibilitas</th>
+                          <th className="col-skor">Skor</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredAnalysisResults.map((r) => (
                           <tr key={r.id}>
-                            <td>
+                            <td className="col-wilayah">
                               <div>{r.kelurahan_spasial ? `${r.kelurahan_spasial} (${r.kecamatan_spasial})` : r.nama_kecamatan || r.kecamatan}</div>
                               {r.perlu_diperiksa && (
                                 <div style={{ fontSize: '.64rem', color: '#d97706', fontWeight: 600 }}>
@@ -349,14 +355,16 @@ export default function SpatialAnalysisPanel({
                                 </div>
                               )}
                             </td>
-                            <td>
-                              <div>{r.nearestDrainage ? `${r.nearestDrainage.distance}m` : 'N/A'}</div>
+                            <td className="col-jarak">
+                              <div><strong>{r.nearestDrainage ? `${r.nearestDrainage.distance}m` : 'N/A'}</strong></div>
                               {r.nearestDrainage?.type && (
                                 <div style={{ fontSize: '.63rem', color: '#64748b' }}>{r.nearestDrainage.type}</div>
                               )}
                             </td>
-                            <td>{r.nearestDrainage?.accessibility || 'N/A'}</td>
-                            <td>
+                            <td className="col-akses">
+                              <span className="proximity-access-badge">{r.nearestDrainage?.accessibility || 'N/A'}</span>
+                            </td>
+                            <td className="col-skor">
                               <span className={`score-badge ${r.proximityScore === 'Baik' ? 'good' : r.proximityScore === 'Sedang' ? 'medium' : 'poor'}`}>
                                 {r.proximityScore}
                               </span>
@@ -396,27 +404,35 @@ export default function SpatialAnalysisPanel({
               <div className="priority-list">
                 {priorityAreas.map((area, i) => (
                   <div key={area.id} className={`priority-item priority-${i + 1}`}>
-                    <div className="priority-rank">{i + 1}</div>
-                    <div className="priority-info">
-                      <h5>{area.displayAreaName || area.nama_kecamatan || area.kecamatan}</h5>
-                      <div className="priority-details">
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.15rem' }}>
-                          <img src={mapFlagIcon} alt="Map marker" style={{ width: '10px', height: '10px', objectFit: 'contain' }} />
-                          {area.jumlah_titik} titik banjir • Keparahan: {area.severity}
-                        </span>
-                        <div style={{ fontSize: '.66rem', color: '#64748b', marginTop: '.15rem' }}>
-                          Rincian: Titik (+{area.floodCountScore}) + Keparahan (+{area.severityScore})
-                          {area.bufferComponentIncluded ? ` + Buffer (+${area.bufferScore})` : ' (Tanpa Buffer)'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="priority-score">
-                      <div className="score-text">
-                        Skor <strong>{area.priorityScore}/{area.maxPossibleScore || 100}</strong>
+                    {/* Bagian Atas: Peringkat, Nama Wilayah, Badge Prioritas */}
+                    <div className="priority-card-top">
+                      <div className="priority-card-top-left">
+                        <span className="priority-rank">{i + 1}</span>
+                        <h5 className="priority-title">{area.displayAreaName || area.nama_kecamatan || area.kecamatan}</h5>
                       </div>
                       <span className={`priority-level ${area.priorityLevel === 'Sangat Mendesak' ? 'urgent' : area.priorityLevel === 'Mendesak' ? 'high' : 'medium'}`}>
                         {area.priorityLevel}
                       </span>
+                    </div>
+
+                    {/* Bagian Tengah: Jumlah Titik Banjir & Keparahan */}
+                    <div className="priority-card-middle">
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.3rem' }}>
+                        <img src={mapFlagIcon} alt="Map marker" style={{ width: '12px', height: '12px', objectFit: 'contain' }} />
+                        <strong>{area.jumlah_titik}</strong> titik banjir • Keparahan: <strong style={{ textTransform: 'capitalize' }}>{area.severity}</strong>
+                      </span>
+                    </div>
+
+                    {/* Bagian Bawah: Rincian Skoring & Skor Akhir */}
+                    <div className="priority-card-bottom">
+                      <div className="priority-calc-breakdown">
+                        Rincian: Titik (+{area.floodCountScore}) + Keparahan (+{area.severityScore})
+                        {area.bufferComponentIncluded ? ` + Buffer (+${area.bufferScore})` : ' (Tanpa Buffer)'}
+                      </div>
+                      <div className="priority-score-badge">
+                        <span className="score-label">Skor</span>
+                        <span className="score-val"><strong>{area.priorityScore}</strong>/{area.maxPossibleScore || 100}</span>
+                      </div>
                     </div>
                   </div>
                 ))}

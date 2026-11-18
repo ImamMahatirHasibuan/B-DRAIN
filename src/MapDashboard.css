@@ -157,17 +157,27 @@
   color: #fff;
 }
 
-.logo-text h1 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #0c4a6e;
-  margin: 0;
+.logo-image {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
 }
 
+.logo-title,
+.logo-text h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0c4a6e;
+  margin: 0 0 0.15rem 0;
+  line-height: 1.25;
+}
+
+.logo-subtitle,
 .logo-text p {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: #64748b;
   margin: 0;
+  line-height: 1.3;
 }
 
 /* Kotak pencarian: mengisi ruang fleksibel dengan lebar maksimal 400px. */
@@ -1132,6 +1142,27 @@
   min-width: 190px;
 }
 
+/* Legenda risiko mengambang di atas peta */
+.risk-legend-overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  max-width: 275px;
+  z-index: 400;
+  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.14);
+}
+
+.dark-mode .risk-legend-overlay {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
 /* Kartu info kecil dengan latar hampir opak dan bayangan. */
 .info-box {
   background: rgba(255, 255, 255, 0.95);
@@ -1641,16 +1672,39 @@
   color: #dc2626;
 }
 
-/* Tabel hasil analisis dengan scroll horizontal. */
+/* Hint geser horizontal pada tabel hasil analisis */
+.table-scroll-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 0.85rem;
+  margin-bottom: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px dashed #cbd5e1;
+}
+
+/* Tabel hasil analisis dengan scroll horizontal yang konsisten dan responsif. */
 .results-table {
   overflow-x: auto;
-  margin-top: 1rem;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.35rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
 }
 
 .results-table table {
+  min-width: 500px;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8rem;
+  text-align: left;
 }
 
 .results-table thead {
@@ -1659,28 +1713,104 @@
 }
 
 .results-table th {
-  padding: 0.5rem 0.6rem;
-  text-align: left;
+  padding: 0.65rem 0.75rem;
   font-weight: 600;
-}
-
-.results-table td {
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-/* First column = area name: allow wrapping. Other (numeric/status) columns: keep compact */
-.results-table td:first-child,
-.results-table th:first-child {
-  overflow-wrap: anywhere;
-}
-.results-table td:not(:first-child),
-.results-table th:not(:first-child) {
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid #cbd5e1;
   white-space: nowrap;
 }
 
+.results-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+/* Pengaturan kolom tabel: wilayah dibungkus kata utuh, kolom angka/status rapi dan tidak terpotong */
+.results-table .col-wilayah {
+  min-width: 160px;
+  max-width: 220px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.results-table .col-sungai {
+  min-width: 120px;
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
+  color: #334155;
+}
+
+.results-table .col-jarak {
+  min-width: 100px;
+  white-space: nowrap;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-table .col-status {
+  min-width: 130px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.results-table .col-akses {
+  min-width: 110px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.results-table .col-skor {
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.results-table tr:last-child td {
+  border-bottom: none;
+}
+
 .results-table tr:hover {
-  background: rgba(14, 165, 233, 0.05);
+  background: rgba(14, 165, 233, 0.04);
+}
+
+/* Badge status aksesibilitas sungai pada analisis proximity */
+.proximity-access-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.proximity-access-badge.dekat {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.proximity-access-badge.sedang {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.proximity-access-badge.jauh {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
 }
 
 /* Badge cakupan dan skor dengan varian good, medium, dan poor. */
@@ -1707,135 +1837,206 @@
   color: #92400e;
 }
 
-/* Priority Areas */
+/* Priority Areas — Modern Responsive Card Layout */
 .priority-list {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
   margin-bottom: 1.5rem;
 }
 
 .priority-item {
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
   background: #ffffff;
-  padding: 0.75rem;
+  padding: 0.85rem 1rem;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .priority-item:hover {
   background: #f8fafc;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* Aksen garis kiri untuk prioritas 1 sampai 3: emas, perak, dan perunggu. */
-.priority-results .priority-item.priority-1,
-.priority-results .priority-item.priority-2,
-.priority-results .priority-item.priority-3 {
-  border-left-width: 3px;
-  border-left-style: solid;
-}
-.priority-results .priority-item.priority-1 .priority-rank,
-.priority-results .priority-item.priority-2 .priority-rank,
-.priority-results .priority-item.priority-3 .priority-rank {
-  border-radius: 6px;
-  padding: 0.15rem 0;
-}
-
+/* Aksen garis kiri dan badge rank untuk Top 3 (Emas, Perak, Perunggu) */
 .priority-results .priority-item.priority-1 {
-  border-left-color: #d4a017;
+  border-left: 4px solid #f59e0b;
 }
 .priority-results .priority-item.priority-1 .priority-rank {
   background: #fef3c7;
-  color: #92400e;
+  color: #b45309;
 }
 
 .priority-results .priority-item.priority-2 {
-  border-left-color: #94a3b8;
+  border-left: 4px solid #64748b;
 }
 .priority-results .priority-item.priority-2 .priority-rank {
-  background: #e2e8f0;
-  color: #475569;
+  background: #f1f5f9;
+  color: #334155;
 }
 
 .priority-results .priority-item.priority-3 {
-  border-left-color: #b45309;
+  border-left: 4px solid #d97706;
 }
 .priority-results .priority-item.priority-3 .priority-rank {
-  background: #fde8d7;
-  color: #9a3412;
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+/* Header Kartu: Peringkat, Nama Wilayah, Badge Level */
+.priority-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .priority-rank {
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #0369a1;
+  flex-shrink: 0;
+  min-width: 34px;
+}
+
+.priority-title {
+  flex: 1 1 auto;
+  font-size: 0.92rem;
   font-weight: 700;
   color: #0c4a6e;
-  text-align: center;
+  margin: 0;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
-.priority-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.priority-info h5 {
-  color: #0c4a6e;
-  margin-bottom: 0.3rem;
-  font-size: 0.9rem;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-
-.priority-details {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.priority-score {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.3rem;
-}
-
-.score-text {
-  font-size: 0.8rem;
-  color: #475569;
-  white-space: nowrap;
-}
-
-.score-text strong {
-  color: #0c4a6e;
-}
-
-/* Badge tingkat prioritas: urgent merah, high oranye, medium kuning. */
 .priority-level {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   text-align: center;
   white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .priority-level.urgent {
   background: #fee2e2;
   color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 .priority-level.high {
   background: #ffedd5;
   color: #9a3412;
+  border: 1px solid #fed7aa;
 }
 
 .priority-level.medium {
   background: #fef3c7;
   color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* Baris Tengah Kartu: Metrik Titik Banjir dan Tingkat */
+.priority-card-middle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #475569;
+  padding: 0.4rem 0.65rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.priority-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.priority-stat-label {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.priority-stat-val {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.priority-stat-sep {
+  color: #cbd5e1;
+}
+
+/* Baris Bawah Kartu: Formula Penilaian dan Skor Akhir */
+.priority-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.priority-calc-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.calc-formula-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.calc-formula-math {
+  font-size: 0.72rem;
+  color: #334155;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.priority-score-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.score-badge-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #166534;
+  text-transform: uppercase;
+}
+
+.score-badge-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #15803d;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Kotak rekomendasi di bawah hasil analisis. */
@@ -2061,19 +2262,126 @@
 .dark-mode .summary-value {
   color: #f1f5f9;
 }
+.dark-mode .table-scroll-hint {
+  background: rgba(30, 41, 59, 0.5);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.dark-mode .results-table {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: #0f172a;
+}
+
 .dark-mode .results-table thead {
   background: rgba(30, 41, 59, 0.9);
   color: #e2e8f0;
 }
-.dark-mode .results-table td {
-  border-bottom-color: rgba(148, 163, 184, 0.2);
+
+.dark-mode .results-table th {
+  border-bottom-color: rgba(148, 163, 184, 0.3);
 }
+
+.dark-mode .results-table td {
+  border-bottom-color: rgba(148, 163, 184, 0.15);
+}
+
+.dark-mode .results-table .col-wilayah {
+  color: #f1f5f9;
+}
+
+.dark-mode .results-table .col-sungai {
+  color: #cbd5e1;
+}
+
+.dark-mode .results-table .col-jarak {
+  color: #94a3b8;
+}
+
 .dark-mode .results-table tr:hover {
   background: rgba(51, 65, 85, 0.4);
 }
+
+.dark-mode .proximity-access-badge {
+  background: rgba(30, 41, 59, 0.7);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.dark-mode .proximity-access-badge.dekat {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.dark-mode .proximity-access-badge.sedang {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.dark-mode .proximity-access-badge.jauh {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.dark-mode .priority-item {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .priority-item:hover {
+  background: rgba(51, 65, 85, 0.6);
+}
+
+.dark-mode .priority-title {
+  color: #f1f5f9;
+}
+
+.dark-mode .priority-card-middle {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+}
+
+.dark-mode .priority-stat-label {
+  color: #94a3b8;
+}
+
+.dark-mode .priority-stat-val {
+  color: #f1f5f9;
+}
+
+.dark-mode .priority-stat-sep {
+  color: #475569;
+}
+
+.dark-mode .calc-formula-label {
+  color: #94a3b8;
+}
+
+.dark-mode .calc-formula-math {
+  color: #cbd5e1;
+}
+
+.dark-mode .priority-score-badge {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark-mode .score-badge-label {
+  color: #6ee7b7;
+}
+
+.dark-mode .score-badge-val {
+  color: #34d399;
+}
+
 /* Priority rank accents stay readable in dark */
 .dark-mode .priority-results .priority-item.priority-1 .priority-rank {
-  background: rgba(212, 160, 23, 0.25);
+  background: rgba(245, 158, 11, 0.25);
   color: #fcd34d;
 }
 .dark-mode .priority-results .priority-item.priority-2 .priority-rank {
@@ -2081,7 +2389,7 @@
   color: #e2e8f0;
 }
 .dark-mode .priority-results .priority-item.priority-3 .priority-rank {
-  background: rgba(180, 83, 9, 0.25);
+  background: rgba(217, 119, 6, 0.25);
   color: #fdba74;
 }
 
@@ -2225,41 +2533,110 @@
   }
 }
 
-/* Breakpoint 768px (mobile dan tablet kecil): header disusun ulang ke arah kolom, navigasi tab diganti bottom nav, sidebar menjadi drawer dengan backdrop, dan overlay info peta disembunyikan. */
+/* Breakpoint 768px (mobile dan tablet kecil): header ringkas 1 baris, navigasi bottom nav, sidebar full-screen tanpa celah, dan hamburger disembunyikan. */
 @media (max-width: 768px) {
   .header {
-    padding: 0.65rem 1rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 54px;
+    height: auto;
   }
 
   .header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
   }
 
   /* Header nav hidden on mobile — mobile-bottom-nav takes over */
-  /* Navigasi tab di header disembunyikan pada layar 768px ke bawah. */
   .header-nav {
     display: none;
   }
 
-  .header-left,
-  .header-right {
-    width: 100%;
-  }
-
   .header-left {
-    justify-content: space-between;
-    gap: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .header-left .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .header-left .logo-image {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .header-left .logo-text {
+    min-width: 0;
+  }
+
+  .header-left .logo-title,
+  .header-left .logo-text h1 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0c4a6e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .header-left .logo-subtitle,
+  .header-left .logo-text p {
+    display: none !important;
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 8px;
+    flex-shrink: 0;
   }
 
   .header-right {
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    display: flex;
     align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    width: auto;
   }
 
-  /* Mobile: ikon search tampil di header, sedangkan kotak pencarian hanya tampil saat dibuka atau ada teks filter. */
+  /* Hamburger menu ditiadakan khusus pada mobile (sudah ada bottom nav) */
+  .header-right .menu-btn {
+    display: none !important;
+  }
+
+  .header-right .icon-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+
   .search-toggle-btn {
     display: inline-flex;
   }
@@ -2294,7 +2671,6 @@
     cursor: pointer;
   }
 
-  /* Ikon .search-box svg dibuat absolut untuk ikon kaca pembesar; tombol tutup harus kembali ke alur normal. */
   .search-box .search-close-btn svg {
     position: static;
     transform: none;
@@ -2305,71 +2681,67 @@
     color: #cbd5e1;
   }
 
-  /* Search takes its own full-width row; control buttons sit on the row above */
-  /* Pada layar 768px, kotak pencarian menempati baris penuh di bawah tombol kanan. */
-  .search-box {
-    order: 3;
-    flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
-    margin-top: 0.1rem;
-  }
-
-  .header-right .icon-btn,
-  .header-right .menu-btn {
-    order: 2;
-    flex: 0 0 auto;
-  }
-
-  .header-right .icon-btn {
-    margin-left: auto;
-  }
-
-  .header-right .icon-btn + .icon-btn,
-  .header-right .menu-btn {
-    margin-left: 0;
-  }
-  
-  /* Sidebar sebagai drawer: posisi fixed dari sisi kiri, lebar min(88vw, 340px), tampil di atas peta (z-index 500). */
+  /* Panel Sidebar: 100% Full-Screen pada mobile tanpa celah peta di samping */
   .sidebar {
     position: fixed;
-    inset: 0 auto 0 0;
+    inset: 0;
+    width: 100% !important;
+    width: 100vw !important;
+    max-width: 100% !important;
     height: 100dvh;
-    width: min(88vw, 340px);
     z-index: 500;
-    box-shadow: 8px 0 32px rgba(14, 165, 233, 0.18);
+    box-shadow: none;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Drawer header with close button (mobile) */
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+
+  /* Backdrop disembunyikan karena panel sudah menutup 100% layar */
+  .sidebar-backdrop {
+    display: none !important;
+  }
+
+  /* Header Drawer Mobile dengan judul dan tombol silang (X) yang nyaman ditekan */
   .sidebar-mobile-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     border-bottom: 1px solid rgba(14, 165, 233, 0.15);
-    background: rgba(255, 255, 255, 0.95);
+    background: #ffffff;
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 10;
+    flex-shrink: 0;
+    min-height: 52px;
   }
 
   .sidebar-mobile-title {
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #0c4a6e;
+    letter-spacing: -0.01em;
   }
 
-  /* Tombol tutup (X) pada header drawer, ukuran 40 x 40 piksel. */
   .sidebar-close-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 10px;
     background: #f8fafc;
     color: #334155;
     cursor: pointer;
@@ -2381,8 +2753,22 @@
     border-color: rgba(2, 132, 199, 0.35);
   }
 
+  .sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden; /* Mencegah horizontal scrollbar pada drawer */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 1rem 0.85rem;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dark-mode .sidebar {
+    background: #0f172a;
+  }
+
   .dark-mode .sidebar-mobile-header {
-    background: rgba(15, 23, 42, 0.98);
+    background: #0f172a;
     border-bottom-color: rgba(148, 163, 184, 0.2);
   }
 
@@ -2391,27 +2777,19 @@
   }
 
   .dark-mode .sidebar-close-btn {
-    background: rgba(30, 41, 59, 0.6);
+    background: rgba(30, 41, 59, 0.8);
     border-color: rgba(148, 163, 184, 0.3);
     color: #cbd5e1;
   }
 
-  .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.28);
-    backdrop-filter: blur(2px);
-    z-index: 490;
+  .dark-mode .sidebar-close-btn:hover {
+    background: rgba(51, 65, 85, 0.8);
+    color: #f8fafc;
   }
-  
-  /* Drawer tertutup digeser keluar ke kiri. */
-  .sidebar.closed {
-    transform: translateX(-100%);
-  }
-  
-  .logo-text p {
-    display: none;
+
+  .dark-mode .logo-title,
+  .dark-mode .logo-text h1 {
+    color: #f1f5f9;
   }
 
   /* Tablet Adjustments */
@@ -2422,50 +2800,48 @@
   .main-content {
     padding: 0;
     overflow-y: auto;
-    /* Tanpa padding bawah: navigasi bawah bersifat fixed, sehingga peta mengisi seluruh area layar. */
   }
 
-  /* Peta membentuk stacking context sendiri (z-index 0), sehingga kontrol Leaflet (z-index 1000 di dalamnya) tidak bisa tampil di atas navigasi bawah (z-index 260). */
   .map-section {
     z-index: 0;
   }
 
-  /* Bottom navigation shown across the whole mobile/tablet range (<=768) */
+  /* Bottom navigation modern & proporsional (<=768) */
   .mobile-bottom-nav {
     position: fixed;
     left: 0.75rem;
     right: 0.75rem;
-    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px));
     z-index: 260;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 0.35rem;
-    padding: 0.45rem;
+    gap: 0.25rem;
+    padding: 0.35rem 0.4rem;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(14, 165, 233, 0.15);
-    box-shadow: 0 12px 32px rgba(14, 165, 233, 0.18);
+    border: 1px solid rgba(14, 165, 233, 0.18);
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.16);
     backdrop-filter: blur(16px);
   }
 
-  /* Tombol satu item pada bottom nav: ikon di atas teks dengan tinggi minimum 48px. */
   .mobile-bottom-nav-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.2rem;
-    min-height: 48px;
-    padding: 0.4rem 0.2rem;
+    min-height: 46px;
+    padding: 0.35rem 0.15rem;
     border: none;
     border-radius: 12px;
     background: transparent;
     color: #64748b;
-    font-size: 0.64rem;
+    font-size: 0.65rem;
     font-weight: 700;
     line-height: 1;
     text-align: center;
     cursor: pointer;
+    transition: all 0.15s ease;
   }
 
   .mobile-bottom-nav-btn svg {
@@ -2474,7 +2850,8 @@
 
   .mobile-bottom-nav-btn.active {
     background: linear-gradient(135deg, rgba(14,165,233,0.16), rgba(2,132,199,0.16));
-    color: #0369a1;
+    color: #0284c7;
+    box-shadow: 0 1px 4px rgba(2, 132, 199, 0.1);
   }
 
   .dark-mode .mobile-bottom-nav {
@@ -2492,20 +2869,24 @@
   }
 
   /* Risk legend overlay lifted above the fixed bottom nav (<=768) */
-  /* Selector ini mencocokkan teks style inline tanpa spasi. Browser biasanya menormalkan style inline dengan spasi, sehingga selector ini berpotensi tidak cocok. Belum diverifikasi di browser. */
+  .risk-legend-overlay,
   [style*="position:fixed"][style*="bottom:20px"][style*="right:20px"] {
-    bottom: 92px !important;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 12px !important;
+    left: auto !important;
+    max-width: min(85vw, 240px) !important;
+    padding: 0.65rem 0.8rem !important;
+    font-size: 0.72rem !important;
+    border-radius: 12px !important;
     z-index: 255 !important;
   }
 
-  /* Map info overlay hidden on mobile/tablet — same stats are in the Overview tab.
-     This avoids the panel covering the map, drawer, and attribution. */
+  /* Map info overlay hidden on mobile/tablet — same stats are in the Overview tab. */
   .map-overlay {
     display: none;
   }
 
-  /* Leaflet attribution — compact, pinned to the very bottom-right corner of the map.
-     (No upward offset: lifting it placed it in the middle of the visible map strip.) */
+  /* Leaflet attribution — compact, pinned to bottom right */
   .leaflet-bottom {
     bottom: 0;
   }
@@ -2584,22 +2965,32 @@
     max-height: 350px;
   }
 
+  /* Reclaimed padding for sidebar & analysis panels on tablet/mobile */
+  .sidebar-content {
+    padding: 1.1rem 0.9rem;
+  }
+
+  .spatial-section {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .analysis-results, .priority-results {
+    padding: 0.85rem 0.65rem;
+  }
+
   .priority-item {
-    grid-template-columns: 30px minmax(0, 1fr) auto;
-    gap: 0.6rem;
-    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .priority-title {
+    font-size: 0.88rem;
   }
 
   .priority-rank {
-    font-size: 1rem;
-  }
-
-  .priority-info h5 {
-    font-size: 0.9rem;
-  }
-
-  .priority-info p {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
   }
 
   .score {
@@ -2628,71 +3019,90 @@
   }
 
   .header {
-    padding: 0.5rem 0.75rem;
-    min-height: auto;
+    padding: 0.45rem 0.6rem;
+    min-height: 52px;
   }
 
   .header-content {
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
   }
 
   .header-left {
-    width: 100%;
-    justify-content: space-between;
-    gap: 0.5rem;
+    width: auto;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .header-left .logo-title,
+  .header-left .logo-text h1 {
+    font-size: 0.84rem;
+    max-width: 135px;
+    line-height: 1.15;
+  }
+
+  .header-left .logo-image {
+    width: 28px;
+    height: 28px;
   }
 
   .header-right {
-    width: 100%;
-    gap: 0.35rem;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    width: auto;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
   }
 
-  .logo-logo {
-    width: 35px;
-    height: 35px;
+  .back-btn {
+    min-height: 38px;
+    min-width: 38px;
+    padding: 0.3rem 0.45rem;
+    font-size: 0.72rem;
   }
 
-  .logo-text h2 {
-    font-size: 1rem;
-  }
-
-  .logo-text p {
-    display: none;
-  }
-
-  .search-box {
-    width: 100%;
-    max-width: 100%;
-    padding: 0;
+  .header-right .icon-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
   }
 
   .search-box input {
     font-size: 16px; /* prevent iOS zoom-on-focus */
-    padding: 0.55rem 0.8rem 0.55rem 2.5rem; /* keep room for the search icon */
+    padding: 0.5rem 0.7rem 0.5rem 2.2rem;
   }
 
   .sidebar {
-    width: min(92vw, 320px);
-    max-width: 320px;
+    width: 100% !important;
+    width: 100vw !important;
+    max-width: 100% !important;
   }
 
   .main-content {
     padding: 0;
     flex: 1;
     overflow-y: auto;
-    /* Tanpa padding bawah: navigasi bawah bersifat fixed, sehingga peta mengisi seluruh area layar. */
   }
 
   .sidebar-backdrop {
-    z-index: 490;
+    display: none !important;
   }
 
   /* bottom-nav base styles inherited from <=768 block; tighten font for very small screens */
+  .mobile-bottom-nav {
+    left: 0.5rem;
+    right: 0.5rem;
+    gap: 0.15rem;
+    padding: 0.3rem 0.25rem;
+    bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .mobile-bottom-nav-btn {
-    font-size: 0.6rem;
+    font-size: 0.62rem;
+    min-height: 44px;
+    padding: 0.25rem 0.1rem;
   }
 
   .stat-cards {
@@ -2760,26 +3170,51 @@
     gap: 0.6rem;
   }
 
+  .sidebar-content {
+    padding: 0.85rem 0.65rem;
+  }
+
   .priority-item {
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    gap: 0.5rem;
-    padding: 0.6rem;
-    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+  }
+
+  .priority-card-top {
+    gap: 0.45rem;
   }
 
   .priority-rank {
-    font-size: 0.9rem;
-    min-width: 25px;
+    font-size: 0.78rem;
+    padding: 0.1rem 0.4rem;
+    min-width: 28px;
   }
 
-  .priority-info h5 {
-    font-size: 0.85rem;
-    margin-bottom: 0.2rem;
+  .priority-title {
+    font-size: 0.84rem;
   }
 
-  .priority-info p {
-    font-size: 0.75rem;
-    line-height: 1.3;
+  .priority-level {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .priority-card-middle {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.74rem;
+  }
+
+  .priority-card-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .priority-score-badge {
+    align-self: flex-start;
+    padding: 0.2rem 0.55rem;
   }
 
   .score {
@@ -2828,26 +3263,21 @@
      Do not override .recharts-wrapper height here, it collapses the SVG. */
 
   /* Buttons */
-  /* Target sentuh minimum (44px) untuk tombol pada layar 480px ke bawah. */
-  .btn, .icon-btn {
+  .btn {
     min-height: 44px;
-    min-width: 44px;
     padding: 0.5rem 0.8rem;
     font-size: 0.8rem;
   }
 
-  .btn {
-    padding: 0.5rem 0.8rem;
-  }
-
   .icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
   }
 
   .menu-btn {
-    width: 44px;
-    height: 44px;
+    display: none !important;
   }
 
   /* Layer Control */
@@ -2932,14 +3362,15 @@
 
   /* Risk legend on mobile — lifted above the fixed bottom nav so it isn't covered */
   /* Override !important untuk legenda risiko pada layar 480px. Selector sama dengan blok 768px, lihat catatan di sana. */
+  .risk-legend-overlay,
   [style*="position:fixed"][style*="bottom:20px"][style*="right:20px"] {
     position: fixed !important;
-    bottom: 92px !important;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
     right: 10px !important;
     left: auto !important;
-    max-width: 220px !important;
-    padding: 0.75rem 0.9rem !important;
-    font-size: 0.75rem !important;
+    max-width: min(85vw, 220px) !important;
+    padding: 0.65rem 0.8rem !important;
+    font-size: 0.72rem !important;
     z-index: 255 !important;
   }
 

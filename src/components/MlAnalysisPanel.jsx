@@ -145,6 +145,7 @@ export default function MlAnalysisPanel({
 
   const inp = {
     width: '100%',
+    maxWidth: '100%',
     padding: '.45rem .6rem',
     borderRadius: '8px',
     border: `1px solid ${t.border}`,
@@ -172,8 +173,8 @@ export default function MlAnalysisPanel({
   const canRunSingle = Boolean(mlPickedPoint && mlPickedKelurahan && mlStatus !== 'loading');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      <div style={{ padding: '1rem 1rem .75rem', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div style={{ padding: '0.85rem 0.85rem .75rem', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontWeight: '700', fontSize: '.95rem', color: t.text, display: 'flex', alignItems: 'center', gap: '.5rem', paddingBottom: '.25rem', flexWrap: 'wrap' }}>
             Prediksi Risiko Banjir (Random Forest)
@@ -210,7 +211,7 @@ export default function MlAnalysisPanel({
         </div>
       </div>
 
-      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.9rem', maxWidth: '100%', boxSizing: 'border-box' }}>
         <details
           style={{
             borderRadius: '9px',
@@ -219,18 +220,20 @@ export default function MlAnalysisPanel({
             padding: '.55rem .7rem',
             fontSize: '.71rem',
             color: t.textSec,
+            maxWidth: '100%',
+            boxSizing: 'border-box',
           }}
         >
           <summary style={{ cursor: 'pointer', fontWeight: 700, color: t.text, fontSize: '.75rem' }}>
             Informasi & Spesifikasi Model Random Forest
           </summary>
-          <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.3rem', lineHeight: 1.45 }}>
+          <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.3rem', lineHeight: 1.45, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
             <div>
               <b>Algoritma:</b> {mlModelMetadata?.algorithm || 'RandomForestClassifier'} (Pipeline: StandardScaler + RandomForestClassifier)
             </div>
             <div>
               <b>Versi & Konfigurasi:</b> {mlModelMetadata?.model_version || mlModelInfo?.model_version || 'rf-logo-bekasi-v2'} •{' '}
-              <code>
+              <code style={{ overflowWrap: 'anywhere', wordBreak: 'break-word', whiteSpace: 'normal' }}>
                 n_estimators={mlModelMetadata?.model_config?.n_estimators ?? 200}, max_depth={mlModelMetadata?.model_config?.max_depth ?? 8}, class_weight={mlModelMetadata?.model_config?.class_weight ?? 'balanced'}, random_state={mlModelMetadata?.model_config?.random_state ?? 42}
               </code>
             </div>
@@ -238,7 +241,7 @@ export default function MlAnalysisPanel({
               <b>Populasi & Sampel Pelatihan:</b> {mlModelMetadata?.total_kelurahan_kota_bekasi ?? 48} Kelurahan Kota Bekasi (33 berlabel Varian B, 27 Varian A, 15 tanpa titik banjir historis)
             </div>
             <div>
-              <b>9 Fitur Input:</b> <code>{(mlModelMetadata?.feature_columns || ML_FEATURE_COLUMNS).join(', ')}</code>
+              <b>9 Fitur Input:</b> <code style={{ overflowWrap: 'anywhere', wordBreak: 'break-word', whiteSpace: 'normal' }}>{(mlModelMetadata?.feature_columns || ML_FEATURE_COLUMNS).join(', ')}</code>
             </div>
             <div>
               <b>Kelas Keluaran:</b> <code>{(mlModelMetadata?.label_classes || ['sedang', 'tinggi']).join(', ')}</code>
@@ -508,18 +511,21 @@ export default function MlAnalysisPanel({
             Setiap kelurahan diprediksi menggunakan 9 fitur spasial & topografi aktualnya masing-masing.
           </div>
 
-          <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.55rem' }}>
+          <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.55rem', flexWrap: 'wrap' }}>
             <select
               value={mlBatchScope}
               onChange={(e) => onMlBatchScopeChange(e.target.value)}
               style={{
-                flex: 1,
+                flex: '1 1 180px',
+                minWidth: 0,
+                width: '100%',
                 padding: '.48rem .6rem',
                 borderRadius: '8px',
                 border: `1px solid ${t.border}`,
                 fontSize: '.76rem',
                 color: t.text,
                 background: t.cardBg,
+                boxSizing: 'border-box',
               }}
             >
               <option value="all">Semua Kelurahan Kota Bekasi ({totalKelurahanCount})</option>
@@ -530,6 +536,7 @@ export default function MlAnalysisPanel({
               onClick={() => { if (mlBatchStatus !== 'loading') onAnalyzeBatch(); }}
               disabled={mlBatchStatus === 'loading'}
               style={{
+                flex: '0 0 auto',
                 padding: '.48rem .75rem',
                 borderRadius: '8px',
                 border: 'none',
@@ -538,24 +545,28 @@ export default function MlAnalysisPanel({
                 fontSize: '.76rem',
                 fontWeight: '700',
                 cursor: mlBatchStatus === 'loading' ? 'not-allowed' : 'pointer',
-                minWidth: '105px',
+                minWidth: '95px',
+                boxSizing: 'border-box',
               }}
             >
               {mlBatchStatus === 'loading' ? 'Proses...' : 'Run Batch'}
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.45rem', marginBottom: '.55rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '.45rem', marginBottom: '.55rem' }}>
             <select
               value={mlBatchRiskFilter}
               onChange={(e) => onMlBatchRiskFilterChange(e.target.value)}
               style={{
+                width: '100%',
+                minWidth: 0,
                 padding: '.46rem .55rem',
                 borderRadius: '8px',
                 border: `1px solid ${t.border}`,
                 fontSize: '.74rem',
                 color: t.text,
                 background: t.cardBg,
+                boxSizing: 'border-box',
               }}
             >
               <option value="all">Semua Kelas</option>
@@ -566,6 +577,8 @@ export default function MlAnalysisPanel({
               value={mlBatchSortBy}
               onChange={(e) => onMlBatchSortByChange(e.target.value)}
               style={{
+                width: '100%',
+                minWidth: 0,
                 padding: '.46rem .55rem',
                 borderRadius: '8px',
                 border: `1px solid ${t.border}`,
@@ -650,8 +663,8 @@ export default function MlAnalysisPanel({
                 ))}
               </div>
 
-              <div style={{ maxHeight: '240px', overflow: 'auto', border: `1px solid ${t.border}`, borderRadius: '10px', background: t.cardBg }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.71rem' }}>
+              <div style={{ maxHeight: '240px', overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch', border: `1px solid ${t.border}`, borderRadius: '10px', background: t.cardBg }}>
+                <table style={{ width: '100%', minWidth: '320px', borderCollapse: 'collapse', fontSize: '.71rem' }}>
                   <thead>
                     <tr style={{ position: 'sticky', top: 0, background: t.secBg, zIndex: 1 }}>
                       <th style={{ textAlign: 'left', padding: '.45rem .5rem', borderBottom: `1px solid ${t.border}`, color: t.text }}>Kelurahan</th>
